@@ -258,6 +258,42 @@ export async function apiUpsertNotificationReads({
 /**
  * Fetch data transaksi dari Google Sheets
  */
+export async function apiGetUserSettings({ userId, familyId }) {
+  try {
+    const params = new URLSearchParams({
+      action: "getUserSettings",
+      userId: String(userId || ""),
+      familyId: String(familyId || ""),
+    });
+    const r = await fetch(`${GAS_WEB_APP_URL}?${params.toString()}`);
+    const res = await r.json();
+    if (res.status === "success") return { success: true, data: res.data };
+    return { success: false, error: res.message };
+  } catch {
+    return { success: false, error: "Koneksi gagal." };
+  }
+}
+
+export async function apiUpsertUserSettings({ userId, familyId, settings }) {
+  try {
+    const r = await post("upsertUserSettings", {
+      userId,
+      familyId,
+      dailyReminderEnabled: settings.dailyReminderEnabled ?? false,
+      dailyReminderTime: settings.dailyReminderTime ?? "20:00",
+      weeklyReportEnabled: settings.weeklyReportEnabled ?? false,
+      weeklyReportEmail: settings.weeklyReportEmail ?? "",
+    });
+    if (r.status === "success") return { success: true, data: r.data || null };
+    return { success: false, error: r.message };
+  } catch {
+    return { success: false, error: "Koneksi gagal." };
+  }
+}
+
+/**
+ * Fetch data transaksi dari Google Sheets
+ */
 export async function fetchTransaksi(familyId = null) {
   try {
     const url = familyId

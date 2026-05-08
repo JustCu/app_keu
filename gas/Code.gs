@@ -96,6 +96,13 @@ function normalizeReadMap(readMap) {
   return normalized;
 }
 
+function getSettingsRowIndex(rows, userId, familyId) {
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][1] === userId && rows[i][2] === familyId) return i + 1;
+  }
+  return -1;
+}
+
 function getNotificationReadRowIndex(rows, userId, familyId) {
   for (let i = 1; i < rows.length; i++) {
     if (rows[i][1] === userId && rows[i][2] === familyId) return i + 1;
@@ -424,7 +431,94 @@ function handleRequest(e, isPost) {
         output.status = "error";
         output.message = "FORBIDDEN";
       } else {
+        ensureSheetHeaders("User_Settings", [
+          "ID",
+          "UserId",
+          "FamilyId",
+          "DailyReminderEnabled",
+          "DailyReminderTime",
+          "WeeklyReportEnabled",
+          "WeeklyReportEmail",
+          "UpdatedAt",
+        ]);
+
         ensureSheetHeaders("Notification_Reads", [
+              } else if (action === "getUserSettings") {
+                const userId = e.parameter.userId || "";
+                const familyId = e.parameter.familyId || "";
+                if (!userId || !familyId) throw new Error("userId & familyId required");
+                const ss = getSpreadsheet();
+                const uSheet = ss.getSheetByName("Users");
+                const uData = uSheet ? uSheet.getDataRange().getValues() : [];
+                const user = getUserById(uData, userId);
+                if (!user || !isFamilyMember(ss, userId, familyId)) {
+                  output.status = "error";
+                  output.message = "FORBIDDEN";
+                } else {
+                  ensureSheetHeaders("User_Settings", [
+                    "ID", "UserId", "FamilyId",
+                    "DailyReminderEnabled", "DailyReminderTime",
+                    "WeeklyReportEnabled", "WeeklyReportEmail", "UpdatedAt",
+                  ]);
+                  const sSheet = ss.getSheetByName("User_Settings");
+                  const sData = sSheet ? sSheet.getDataRange().getValues() : [];
+                  const row = sData.slice(1).find((r) => r[1] === userId && r[2] === familyId);
+                  output.data = row
+                    ? {
+                        dailyReminderEnabled: row[3] === true || row[3] === "TRUE",
+                        dailyReminderTime: row[4] || "20:00",
+                        weeklyReportEnabled: row[5] === true || row[5] === "TRUE",
+                        weeklyReportEmail: row[6] || user.email || "",
+                      }
+                    : {
+                        dailyReminderEnabled: false,
+                        dailyReminderTime: "20:00",
+                        weeklyReportEnabled: false,
+                        weeklyReportEmail: user.email || "",
+                      };
+                }
+              } else if (action === "upsertUserSettings" && isPost) {
+                const p = JSON.parse(e.postData.contents);
+                const userId = p.userId || "";
+                const familyId = p.familyId || "";
+                if (!userId || !familyId) throw new Error("userId & familyId required");
+                const ss = getSpreadsheet();
+                const uSheet = ss.getSheetByName("Users");
+                const uData = uSheet ? uSheet.getDataRange().getValues() : [];
+                const user = getUserById(uData, userId);
+                if (!user || !isFamilyMember(ss, userId, familyId)) {
+                  output.status = "error";
+                  output.message = "FORBIDDEN";
+                } else {
+                  ensureSheetHeaders("User_Settings", [
+                    "ID", "UserId", "FamilyId",
+                    "DailyReminderEnabled", "DailyReminderTime",
+                    "WeeklyReportEnabled", "WeeklyReportEmail", "UpdatedAt",
+                  ]);
+                  const sSheet = ss.getSheetByName("User_Settings");
+                  const sData = sSheet.getDataRange().getValues();
+                  const rowIdx = getSettingsRowIndex(sData, userId, familyId);
+                  const updatedAt = new Date().toISOString();
+                  const dailyEnabled = p.dailyReminderEnabled === true;
+                  const dailyTime = String(p.dailyReminderTime || "20:00");
+                  const weeklyEnabled = p.weeklyReportEnabled === true;
+                  const weeklyEmail = String(p.weeklyReportEmail || user.email || "");
+                  if (rowIdx === -1) {
+                    sSheet.appendRow([
+                      generateId(), userId, familyId,
+                      dailyEnabled, dailyTime, weeklyEnabled, weeklyEmail, updatedAt,
+                    ]);
+                  } else {
+                    sSheet.getRange(rowIdx, 4).setValue(dailyEnabled);
+                    sSheet.getRange(rowIdx, 5).setValue(dailyTime);
+                    sSheet.getRange(rowIdx, 6).setValue(weeklyEnabled);
+                    sSheet.getRange(rowIdx, 7).setValue(weeklyEmail);
+                    sSheet.getRange(rowIdx, 8).setValue(updatedAt);
+                  }
+                  output.data = { updatedAt };
+                  output.message = "Pengaturan berhasil disimpan";
+                }
+              } else if (action === "getNotificationReads") {
           "ID",
           "UserId",
           "FamilyId",
@@ -1433,6 +1527,188 @@ function getFilteredData(sheetName, familyId, familyIdColIndex) {
 
 function getTableData(sheetName) {
   return getFilteredData(sheetName, null, -1);
+}
+// ===== SCHEDULED EMAIL TRIGGERS =====
+
+function sendDailyReminderEmails() {
+  const ss = getSpreadsheet();
+  const sSheet = ss.getSheetByName("User_Settings");
+  if (!sSheet) return;
+  const sData = sSheet.getDataRange().getValues();
+  const uSheet = ss.getSheetByName("Users");
+  if (!uSheet) return;
+  const uData = uSheet.getDataRange().getValues();
+
+  const nowJkt = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+  );
+  const currentHour = nowJkt.getHours();
+  const currentMin = nowJkt.getMinutes();
+
+  sData.slice(1).forEach((row) => {
+    const dailyEnabled = row[3] === true || row[3] === "TRUE";
+    if (!dailyEnabled) return;
+    const userId = row[1];
+    const reminderTime = String(row[4] || "20:00");
+    const [rHour, rMin] = reminderTime.split(":").map(Number);
+    // Only send if within the same hour and within first 10 minutes of trigger
+    if (currentHour !== rHour) return;
+    if (Math.abs(currentMin - (rMin || 0)) > 10) return;
+
+    const user = getUserById(uData, userId);
+    if (!user || !user.email) return;
+    try {
+      MailApp.sendEmail({
+        to: user.email,
+        subject: "📝 Jangan lupa catat keuanganmu hari ini!",
+        htmlBody: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+            <h2 style="color:#2563eb;margin-bottom:8px;">Dompet Keluarga</h2>
+            <p style="font-size:16px;color:#111827;">Halo <b>${user.nama}</b>,</p>
+            <p style="color:#374151;">Ini adalah pengingat harian untuk mencatat transaksi keuangan keluarga kamu.</p>
+            <p style="color:#374151;">Mencatat pengeluaran dan pemasukan secara rutin membantu kamu mengelola keuangan lebih baik.</p>
+            <a href="https://dompet.fathuryuni.my.id" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">Catat Sekarang</a>
+            <p style="margin-top:24px;font-size:12px;color:#9ca3af;">Pengingat ini dikirim karena kamu mengaktifkan fitur Pengingat Harian di Dompet Keluarga. Kamu dapat menonaktifkannya di menu Pengaturan.</p>
+          </div>
+        `,
+      });
+    } catch (err) {
+      Logger.log("Gagal kirim reminder ke " + user.email + ": " + err.message);
+    }
+  });
+}
+
+function sendWeeklyReportEmails() {
+  const ss = getSpreadsheet();
+  const sSheet = ss.getSheetByName("User_Settings");
+  if (!sSheet) return;
+  const sData = sSheet.getDataRange().getValues();
+  const uSheet = ss.getSheetByName("Users");
+  if (!uSheet) return;
+  const uData = uSheet.getDataRange().getValues();
+  const fSheet = ss.getSheetByName("Keluarga");
+  const fData = fSheet ? fSheet.getDataRange().getValues() : [];
+
+  const now = new Date();
+  const weekEnd = new Date(now);
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - 6);
+  weekStart.setHours(0, 0, 0, 0);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  sData.slice(1).forEach((row) => {
+    const weeklyEnabled = row[5] === true || row[5] === "TRUE";
+    if (!weeklyEnabled) return;
+    const userId = row[1];
+    const familyId = row[2];
+    const reportEmail = String(row[6] || "");
+    if (!reportEmail) return;
+
+    const user = getUserById(uData, userId);
+    if (!user) return;
+
+    const fRow = fData.slice(1).find((r) => r[0] === familyId);
+    const familyName = fRow ? fRow[1] : "Keluarga";
+
+    const transaksi = getFilteredData("Transaksi", familyId, 6);
+    let masuk = 0, keluar = 0;
+    const perPos = {};
+    let totalTx = 0;
+    transaksi.forEach((t) => {
+      const d = new Date(t.Tanggal);
+      if (d < weekStart || d > weekEnd) return;
+      const n = parseInt(String(t.Nominal).replace(/[^0-9]/g, ""), 10) || 0;
+      totalTx++;
+      if (t.Tipe === "pemasukan") masuk += n;
+      else {
+        keluar += n;
+        perPos[t["Pos Anggaran"]] = (perPos[t["Pos Anggaran"]] || 0) + n;
+      }
+    });
+
+    const fmt = (n) => "Rp " + n.toLocaleString("id-ID");
+    const saldo = masuk - keluar;
+    const saldoColor = saldo >= 0 ? "#16a34a" : "#dc2626";
+
+    const posRows = Object.entries(perPos)
+      .sort((a, b) => b[1] - a[1])
+      .map(
+        ([k, v]) =>
+          `<tr><td style="padding:6px 12px;color:#374151;">${k}</td><td style="padding:6px 12px;text-align:right;color:#374151;">${fmt(v)}</td></tr>`
+      )
+      .join("");
+
+    const dateLabel =
+      Utilities.formatDate(weekStart, "Asia/Jakarta", "d MMM") +
+      " - " +
+      Utilities.formatDate(weekEnd, "Asia/Jakarta", "d MMM yyyy");
+
+    try {
+      MailApp.sendEmail({
+        to: reportEmail,
+        subject: `📊 Laporan Mingguan ${familyName} — ${dateLabel}`,
+        htmlBody: `
+          <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;">
+            <h2 style="color:#2563eb;margin-bottom:4px;">Dompet Keluarga</h2>
+            <p style="color:#6b7280;margin-top:0;">Laporan Mingguan · ${dateLabel}</p>
+            <h3 style="color:#111827;">${familyName}</h3>
+            <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;overflow:hidden;margin:16px 0;">
+              <tr style="background:#eff6ff;">
+                <td style="padding:10px 12px;font-weight:bold;color:#2563eb;">Total Transaksi</td>
+                <td style="padding:10px 12px;text-align:right;font-weight:bold;color:#2563eb;">${totalTx}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 12px;color:#374151;">💰 Pemasukan</td>
+                <td style="padding:10px 12px;text-align:right;color:#16a34a;font-weight:bold;">${fmt(masuk)}</td>
+              </tr>
+              <tr style="background:#fff1f2;">
+                <td style="padding:10px 12px;color:#374151;">💸 Pengeluaran</td>
+                <td style="padding:10px 12px;text-align:right;color:#dc2626;font-weight:bold;">${fmt(keluar)}</td>
+              </tr>
+              <tr style="border-top:2px solid #e5e7eb;">
+                <td style="padding:10px 12px;font-weight:bold;color:#111827;">Saldo Bersih</td>
+                <td style="padding:10px 12px;text-align:right;font-weight:bold;color:${saldoColor};">${fmt(saldo)}</td>
+              </tr>
+            </table>
+            ${
+              posRows
+                ? `<h4 style="color:#374151;margin-bottom:8px;">Pengeluaran per Pos</h4>
+              <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;overflow:hidden;">
+                ${posRows}
+              </table>`
+                : `<p style="color:#9ca3af;font-style:italic;">Belum ada pengeluaran minggu ini.</p>`
+            }
+            <a href="https://dompet.fathuryuni.my.id" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">Buka Aplikasi</a>
+            <p style="margin-top:24px;font-size:12px;color:#9ca3af;">Email ini dikirim otomatis setiap Senin pagi karena kamu mengaktifkan Laporan Mingguan di Dompet Keluarga.</p>
+          </div>
+        `,
+      });
+    } catch (err) {
+      Logger.log("Gagal kirim laporan ke " + reportEmail + ": " + err.message);
+    }
+  });
+}
+
+function setupScheduledTriggers() {
+  // Hapus trigger lama agar tidak dobel
+  ScriptApp.getProjectTriggers().forEach((t) => {
+    const fn = t.getHandlerFunction();
+    if (fn === "sendDailyReminderEmails" || fn === "sendWeeklyReportEmails") {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+  // Daily: setiap jam (GAS cek waktu user satu per satu)
+  ScriptApp.newTrigger("sendDailyReminderEmails")
+    .timeBased()
+    .everyHours(1)
+    .create();
+  // Weekly: setiap Senin jam 07:00 WIB
+  ScriptApp.newTrigger("sendWeeklyReportEmails")
+    .timeBased()
+    .onWeekDay(ScriptApp.WeekDay.MONDAY)
+    .atHour(7)
+    .create();
+  Logger.log("Triggers berhasil dibuat.");
 }
 
 function triggerAuth() {
