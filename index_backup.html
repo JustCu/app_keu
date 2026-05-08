@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Menambahkan Chart.js untuk visualisasi data -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Keuangan Rumah Tangga - Mobile App</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    /* Hide scrollbar for a native app feel */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Decorative shine effect for the debit card */
+    .card-shine {
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+    }
+
+    /* Transisi halus untuk perpindahan view */
+    .view-transition {
+      transition: opacity 0.3s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex justify-center h-screen overflow-hidden text-gray-900">
+
+  <!-- Mobile App Container -->
+  <div class="w-full max-w-md bg-white h-full relative flex flex-col shadow-2xl overflow-hidden">
+    
+    <!-- Top Header -->
+    <header class="flex justify-between items-center px-4 pt-8 pb-2 bg-white z-10 shadow-sm">
+      <div id="header-teks">
+        <p class="text-sm font-medium text-gray-500">Selamat datang,</p>
+        <h1 class="text-lg font-bold text-gray-900">Keluarga Pratama</h1>
+      </div>
+      
+      <!-- Tombol Notifikasi (Pengganti Avatar) -->
+      <button onclick="openOverlay('view-notifikasi')" class="relative w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center border border-gray-100 shadow-sm hover:bg-gray-100 transition active:scale-95">
+        <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+        <!-- Indikator Titik Merah (Notif Baru) -->
+        <span class="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"></span>
+      </button>
+    </header>
+
+    <!-- Main Scrollable Content -->
+    <main class="flex-1 overflow-y-auto no-scrollbar pb-24 relative bg-gray-50">
+      
+      <!-- ================= VIEW: BERANDA ================= -->
+      <div id="view-beranda" class="view-transition opacity-100 block pb-8 bg-white">
+        <!-- Main Dashboard Card Section -->
+        <section class="px-4 mt-4">
+          <div class="relative bg-gradient-to-br from-blue-900 via-blue-800 to-gray-900 rounded-2xl p-6 text-white shadow-xl overflow-hidden flex flex-col gap-5">
+            <!-- Decorative Backgrounds -->
+            <div class="absolute top-0 right-0 w-40 h-40 bg-white opacity-5 rounded-full -mr-16 -mt-16 pointer-events-none"></div>
+            <div class="absolute bottom-0 left-0 w-32 h-32 bg-blue-500 opacity-10 rounded-full -ml-10 -mb-10 pointer-events-none"></div>
+            <div class="absolute inset-0 card-shine pointer-events-none"></div>
+
+            <!-- Top Row: Title & Toggle Visibility -->
+            <div class="flex justify-between items-center relative z-10">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                </div>
+                <p class="text-blue-100 text-xs font-bold uppercase tracking-wider">Total Saldo</p>
+              </div>
+              <button onclick="toggleBalance()" class="text-blue-200 hover:text-white p-1 rounded-full hover:bg-white/10 transition active:scale-95">
+                <!-- Ikon Mata Terbuka -->
+                <svg id="eye-icon-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                <!-- Ikon Mata Tertutup (Hidden default) -->
+                <svg id="eye-icon-closed" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
+              </button>
+            </div>
+
+            <!-- Middle Row: Main Balance -->
+            <div class="relative z-10">
+              <div class="flex items-baseline gap-1">
+                <span class="text-blue-200 text-lg font-bold">Rp</span>
+                <h2 id="main-balance" class="text-4xl font-bold tracking-tight">4.500.000</h2>
+                <h2 id="main-balance-hidden" class="text-4xl font-bold tracking-tight hidden mt-1">••••••••</h2>
+              </div>
+            </div>
+
+            <!-- Bottom Row: In & Out (Glassmorphism Box) -->
+            <div class="relative z-10 bg-white/10 backdrop-blur-md rounded-xl p-4 flex justify-between border border-white/10 mt-2">
+              
+              <!-- Pemasukan -->
+              <div class="flex-1 flex gap-3 items-center">
+                <div class="w-8 h-8 rounded-full bg-green-400/20 flex items-center justify-center text-green-400 border border-green-400/30">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                </div>
+                <div>
+                  <p class="text-[10px] text-blue-200 uppercase tracking-wider font-bold">Masuk</p>
+                  <p id="in-balance" class="text-sm font-bold text-white mt-0.5">Rp 7.000.000</p>
+                  <p id="in-balance-hidden" class="text-sm font-bold text-white mt-0.5 hidden">Rp •••••••</p>
+                </div>
+              </div>
+              
+              <!-- Divider -->
+              <div class="w-[1px] bg-white/20 mx-2"></div>
+              
+              <!-- Pengeluaran -->
+              <div class="flex-1 flex gap-3 items-center pl-2">
+                <div class="w-8 h-8 rounded-full bg-red-400/20 flex items-center justify-center text-red-400 border border-red-400/30">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                </div>
+                <div>
+                  <p class="text-[10px] text-blue-200 uppercase tracking-wider font-bold">Keluar</p>
+                  <p id="out-balance" class="text-sm font-bold text-white mt-0.5">Rp 2.500.000</p>
+                  <p id="out-balance-hidden" class="text-sm font-bold text-white mt-0.5 hidden">Rp •••••••</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- Recent Transactions List -->
+        <section class="px-4 mt-8">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-base font-bold text-gray-900">Transaksi Terakhir</h2>
+            <button onclick="openOverlay('view-semua-transaksi')" class="text-sm font-medium text-blue-600 hover:text-blue-700 transition active:scale-95">Lihat Semua</button>
+          </div>
+          
+          <div class="flex flex-col gap-5">
+            <!-- Items (Dipangkas sedikit untuk kerapian) -->
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-xl shadow-sm border border-blue-100">👶</div>
+                <div>
+                  <p class="font-bold text-gray-900 text-sm">Susu & Popok</p>
+                  <p class="text-xs text-gray-500 font-medium mt-0.5">Kebutuhan Anak • Hari ini</p>
+                </div>
+              </div>
+              <p class="font-bold text-gray-900 text-sm">- Rp 350.000</p>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-yellow-50 flex items-center justify-center text-xl shadow-sm border border-yellow-100">⚡</div>
+                <div>
+                  <p class="font-bold text-gray-900 text-sm">Token PLN</p>
+                  <p class="text-xs text-gray-500 font-medium mt-0.5">Tagihan • Kemarin</p>
+                </div>
+              </div>
+              <p class="font-bold text-gray-900 text-sm">- Rp 200.000</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ================= VIEW: LAPORAN (Baru) ================= -->
+      <div id="view-laporan" class="view-transition opacity-0 hidden pb-8">
+        
+        <!-- Filter Waktu (Segmented Control) -->
+        <div class="px-4 mt-4">
+          <div class="bg-gray-200/60 p-1 rounded-xl flex gap-1 overflow-x-auto no-scrollbar">
+            <!-- Menambahkan Filter Hari Ini untuk melihat efek Empty State -->
+            <button onclick="updateChartFilter('harian', this)" class="filter-btn flex-1 min-w-[70px] text-sm font-medium py-2 text-gray-500 hover:text-gray-900 transition-all">Hari Ini</button>
+            <button onclick="updateChartFilter('mingguan', this)" class="filter-btn flex-1 min-w-[80px] text-sm font-bold py-2 bg-white rounded-lg shadow-sm text-gray-900 transition-all">Mingguan</button>
+            <button onclick="updateChartFilter('bulanan', this)" class="filter-btn flex-1 min-w-[70px] text-sm font-medium py-2 text-gray-500 hover:text-gray-900 transition-all">Bulanan</button>
+            <button onclick="updateChartFilter('semua', this)" class="filter-btn flex-1 min-w-[70px] text-sm font-medium py-2 text-gray-500 hover:text-gray-900 transition-all">Semua</button>
+          </div>
+        </div>
+
+        <!-- Ringkasan Filter Saat Ini -->
+        <section class="px-4 mt-6">
+          <h2 id="laporan-periode-teks" class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">1 Mei - 7 Mei 2026</h2>
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <p class="text-xs text-gray-500 font-medium mb-1">Total Pemasukan</p>
+              <p id="lap-pemasukan" class="text-lg font-bold text-green-600">Rp 7.000.000</p>
+            </div>
+            <div class="w-[1px] bg-gray-200"></div>
+            <div class="flex-1">
+              <p class="text-xs text-gray-500 font-medium mb-1">Total Pengeluaran</p>
+              <p id="lap-pengeluaran" class="text-lg font-bold text-red-600">Rp 2.500.000</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Area Grafik -->
+        <section class="px-4 mt-6">
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+            <!-- Empty State Layer (Tersembunyi secara default) -->
+            <div id="finance-empty-state" class="hidden absolute inset-0 bg-white/95 z-20 flex flex-col items-center justify-center backdrop-blur-sm">
+               <span class="text-4xl mb-2" role="img" aria-label="Kotak surat kosong">📭</span>
+               <p class="text-sm font-bold text-gray-900">Belum ada transaksi</p>
+               <p class="text-xs text-gray-500 mt-1 px-4 text-center">Catat aktivitas keuangan Anda untuk melihat grafik.</p>
+            </div>
+            
+            <div class="relative w-full h-56">
+              <canvas id="financeChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- Insight / Cerdas Keuangan -->
+        <section class="px-4 mt-6">
+          <div class="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-2xl shadow-sm border border-indigo-100 flex gap-3 items-start">
+            <!-- Implementasi Rekomendasi A11y pada ikon Emoji -->
+            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-lg shadow-sm shrink-0 border border-indigo-50" role="img" aria-label="Ide Cerdas">
+              💡
+            </div>
+            <div>
+              <h3 class="font-bold text-sm text-indigo-900 mb-1.5">Insight Cerdas</h3>
+              <ul id="insight-list" class="text-xs text-indigo-800 space-y-1.5 list-disc ml-3 pr-2 leading-relaxed">
+                <li>Pengeluaran <strong>Kebutuhan Pokok</strong> menyumbang porsi terbesar (48%) minggu ini.</li>
+                <li>Pemasukan Anda jauh lebih besar dari pengeluaran. Sisa dana bisa ditabung!</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- Rincian Pengeluaran per Kategori -->
+        <section class="px-4 mt-8">
+          <h2 class="text-base font-bold text-gray-900 mb-4">Pengeluaran per Pos Anggaran</h2>
+          
+          <!-- Area Donut Chart & Legenda Padat -->
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-5 flex flex-col">
+            
+            <!-- Empty State Layer Khusus Donut Chart -->
+            <div id="category-empty-state" class="hidden flex-col items-center justify-center py-8">
+               <span class="text-4xl mb-2" role="img" aria-label="Grafik kosong">📊</span>
+               <p class="text-sm font-medium text-gray-500">Data pos anggaran kosong</p>
+            </div>
+
+            <div id="category-content">
+              <!-- Donut Chart -->
+              <div class="relative w-full h-48 flex justify-center items-center mb-6">
+                <canvas id="categoryChart" class="z-10"></canvas>
+                <!-- Teks di Tengah Donut -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
+                  <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">Total</p>
+                  <p class="text-lg font-bold text-gray-900">Rp 2.5jt</p>
+                </div>
+              </div>
+              
+              <!-- Compact Legend List (Tanpa Progress Bar yang membingungkan) -->
+              <div class="flex flex-col gap-3">
+                <!-- Item 1 -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-blue-500 shadow-sm"></span>
+                    <span class="text-lg" role="img" aria-label="Kebutuhan Pokok">🛒</span>
+                    <p class="text-sm font-medium text-gray-700">Kebutuhan Pokok</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-sm font-bold text-gray-900">Rp 1.2jt</p>
+                    <p class="text-[10px] font-bold text-gray-400">48%</p>
+                  </div>
+                </div>
+                
+                <hr class="border-gray-50">
+                
+                <!-- Item 2 -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-indigo-500 shadow-sm"></span>
+                    <span class="text-lg" role="img" aria-label="Kebutuhan Anak">👶</span>
+                    <p class="text-sm font-medium text-gray-700">Anak & Toddler</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-sm font-bold text-gray-900">Rp 800rb</p>
+                    <p class="text-[10px] font-bold text-gray-400">32%</p>
+                  </div>
+                </div>
+                
+                <hr class="border-gray-50">
+                
+                <!-- Item 3 -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-yellow-500 shadow-sm"></span>
+                    <span class="text-lg" role="img" aria-label="Tagihan">⚡</span>
+                    <p class="text-sm font-medium text-gray-700">Tagihan & Utilitas</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-sm font-bold text-gray-900">Rp 500rb</p>
+                    <p class="text-[10px] font-bold text-gray-400">20%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ================= VIEW: ANGGARAN ================= -->
+      <div id="view-anggaran" class="view-transition opacity-0 hidden pb-8">
+        
+        <!-- Header Saldo Alokasi -->
+        <section class="px-4 mt-4">
+          <div class="bg-gray-900 rounded-2xl p-6 text-white shadow-lg flex flex-col justify-between relative overflow-hidden">
+            <!-- Dekorasi -->
+            <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
+            
+            <div class="relative z-10">
+              <p class="text-gray-300 text-xs font-medium uppercase tracking-wider mb-1">Total Sisa Alokasi</p>
+              <h2 class="text-3xl font-bold tracking-tight mb-4">Rp 2.900.000</h2>
+              
+              <div class="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden mb-2">
+                <div class="bg-green-400 h-full rounded-full" style="width: 55%"></div>
+              </div>
+              <p class="text-xs text-gray-400 text-right">Terpakai Rp 2.500.000 dari Rp 5.400.000</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Daftar Anggaran -->
+        <section class="px-4 mt-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-base font-bold text-gray-900">Pos Anggaran</h2>
+            <button onclick="openOverlay('view-tambah-anggaran')" class="text-sm font-medium text-blue-600 flex items-center gap-1 hover:text-blue-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+              Tambah
+            </button>
+          </div>
+
+          <div class="flex flex-col gap-4">
+            
+            <!-- Pos 1: Kebutuhan Pokok -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-lg border border-blue-100">🛒</div>
+                  <div>
+                    <p class="font-bold text-sm text-gray-900">Kebutuhan Pokok</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-0.5">Sisa Saldo</p>
+                  </div>
+                </div>
+                <p class="font-bold text-lg text-blue-600">Rp 800.000</p>
+              </div>
+              <div class="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                <div class="bg-blue-500 h-full rounded-full" style="width: 60%"></div>
+              </div>
+              <div class="flex justify-between items-center mt-2">
+                <p class="text-xs text-gray-500 font-medium">Terpakai Rp 1.2jt</p>
+                <p class="text-xs text-gray-400 font-medium">Anggaran Rp 2.0jt</p>
+              </div>
+            </div>
+
+            <!-- Dompet 2: Anak & Toddler -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-lg border border-indigo-100">👶</div>
+                  <div>
+                    <p class="font-bold text-sm text-gray-900">Anak & Toddler</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-0.5">Sisa Saldo</p>
+                  </div>
+                </div>
+                <p class="font-bold text-lg text-indigo-600">Rp 200.000</p>
+              </div>
+              <div class="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                <div class="bg-indigo-500 h-full rounded-full" style="width: 80%"></div>
+              </div>
+              <div class="flex justify-between items-center mt-2">
+                <p class="text-xs text-red-500 font-medium">Terpakai Rp 800rb</p>
+                <p class="text-xs text-gray-400 font-medium">Anggaran Rp 1.0jt</p>
+              </div>
+            </div>
+
+            <!-- Dompet 3: Tagihan -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center text-lg border border-yellow-100">⚡</div>
+                  <div>
+                    <p class="font-bold text-sm text-gray-900">Tagihan Bulanan</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-0.5">Sisa Saldo</p>
+                  </div>
+                </div>
+                <p class="font-bold text-lg text-yellow-600">Rp 500.000</p>
+              </div>
+              <div class="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                <div class="bg-yellow-500 h-full rounded-full" style="width: 50%"></div>
+              </div>
+              <div class="flex justify-between items-center mt-2">
+                <p class="text-xs text-gray-500 font-medium">Terpakai Rp 500rb</p>
+                <p class="text-xs text-gray-400 font-medium">Anggaran Rp 1.0jt</p>
+              </div>
+            </div>
+
+            <!-- Dompet 4: Hobi & Rekreasi -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 opacity-80">
+              <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-lg border border-emerald-100">🎉</div>
+                  <div>
+                    <p class="font-bold text-sm text-gray-900">Rekreasi & Hobi</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-0.5">Sisa Saldo</p>
+                  </div>
+                </div>
+                <p class="font-bold text-lg text-emerald-600">Rp 1.400.000</p>
+              </div>
+              <div class="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                <div class="bg-emerald-500 h-full rounded-full" style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between items-center mt-2">
+                <p class="text-xs text-gray-500 font-medium">Belum terpakai</p>
+                <p class="text-xs text-gray-400 font-medium">Anggaran Rp 1.4jt</p>
+              </div>
+            </div>
+
+          </div>
+        </section>
+      </div>
+
+      <!-- ================= VIEW: PROFIL (Baru) ================= -->
+      <div id="view-profil" class="view-transition opacity-0 hidden pb-8">
+        
+        <!-- Profile Header -->
+        <section class="px-4 mt-8 flex flex-col items-center">
+          <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center border-4 border-white shadow-md mb-4 relative">
+            <span class="text-blue-700 font-bold text-3xl">KP</span>
+            <button class="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full border-2 border-white flex items-center justify-center text-white shadow-sm hover:bg-blue-700 active:scale-95 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+            </button>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900">Keluarga Pratama</h2>
+          <p class="text-sm font-medium text-gray-500">pratama.family@email.com</p>
+        </section>
+
+        <!-- Akun Menu -->
+        <section class="px-4 mt-8">
+          <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Akun & Keluarga</h3>
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            
+            <button onclick="openOverlay('view-edit-profil')" class="w-full flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 active:bg-gray-100 transition">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                </div>
+                <div class="text-left">
+                  <span class="block font-bold text-sm text-gray-900">Edit Profil</span>
+                  <span class="block text-xs font-medium text-gray-500">Ubah nama dan data diri</span>
+                </div>
+              </div>
+              <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+
+            <button onclick="openOverlay('view-anggota')" class="w-full flex items-center justify-between p-4 hover:bg-gray-50 active:bg-gray-100 transition">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+                <div class="text-left">
+                  <span class="block font-bold text-sm text-gray-900">Anggota Keluarga</span>
+                  <span class="block text-xs font-medium text-gray-500">Kelola akses istri/suami</span>
+                </div>
+              </div>
+              <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            
+          </div>
+        </section>
+
+        <!-- Pengaturan Menu -->
+        <section class="px-4 mt-6">
+          <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Pengaturan Lainnya</h3>
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            
+            <button onclick="openOverlay('view-pengaturan')" class="w-full flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 active:bg-gray-100 transition">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </div>
+                <span class="font-bold text-sm text-gray-900">Pengaturan Aplikasi</span>
+              </div>
+              <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+
+            <!-- Menu Tentang Aplikasi Baru -->
+            <button onclick="openOverlay('view-tentang')" class="w-full flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 active:bg-gray-100 transition">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <span class="font-bold text-sm text-gray-900">Tentang Aplikasi</span>
+              </div>
+              <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+
+            <button class="w-full flex items-center justify-between p-4 hover:bg-red-50 active:bg-red-100 transition group">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-red-50 group-hover:bg-red-100 flex items-center justify-center text-red-600 transition">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                </div>
+                <span class="font-bold text-sm text-red-600">Keluar (Logout)</span>
+              </div>
+            </button>
+
+          </div>
+        </section>
+
+        <!-- Versi Aplikasi -->
+        <div class="text-center mt-10 pb-6">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Keuangan Rumah Tangga</p>
+          <p class="text-xs font-medium text-gray-400 mt-1">Versi 1.0.0 (Build 245)</p>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="absolute bottom-0 w-full bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] px-2 pb-safe z-20">
+      <div class="flex justify-around items-center h-16">
+        
+        <!-- Nav: Beranda -->
+        <button onclick="switchView('beranda')" id="nav-beranda" class="flex flex-col items-center justify-center w-16 h-full text-blue-600 transition">
+          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+          <span class="text-[10px] font-bold">Beranda</span>
+        </button>
+
+        <!-- Nav: Laporan -->
+        <button onclick="switchView('laporan')" id="nav-laporan" class="flex flex-col items-center justify-center w-16 h-full text-gray-400 hover:text-gray-600 transition">
+          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          <span class="text-[10px] font-medium">Laporan</span>
+        </button>
+
+        <!-- Nav: FAB (Add Transaction) -->
+        <div class="relative -top-5">
+          <button onclick="openAddTransaction()" class="w-14 h-14 bg-blue-600 rounded-full shadow-lg shadow-blue-600/40 text-white flex items-center justify-center hover:bg-blue-700 active:scale-95 transition-all">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          </button>
+        </div>
+
+        <!-- Nav: Anggaran -->
+        <button onclick="switchView('anggaran')" id="nav-anggaran" class="flex flex-col items-center justify-center w-16 h-full text-gray-400 hover:text-gray-600 transition">
+          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+          <span class="text-[10px] font-medium leading-tight text-center">Anggaran</span>
+        </button>
+
+        <!-- Nav: Profil -->
+        <button onclick="switchView('profil')" id="nav-profil" class="flex flex-col items-center justify-center w-16 h-full text-gray-400 hover:text-gray-600 transition">
+          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+          <span class="text-[10px] font-medium">Profil</span>
+        </button>
+
+      </div>
+    </nav>
+
+    <!-- ================= VIEW: TAMBAH TRANSAKSI (Overlay) ================= -->
+    <div id="view-tambah" class="absolute inset-0 z-50 bg-white flex flex-col transform translate-y-full transition-transform duration-300 ease-in-out shadow-2xl">
+      <!-- Header Overlay -->
+      <header class="flex justify-between items-center px-4 pt-8 pb-4 border-b border-gray-100 bg-white">
+        <h2 class="text-lg font-bold text-gray-900">Tambah Transaksi</h2>
+        <button onclick="closeAddTransaction()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </header>
+
+      <!-- Content Scrollable Form -->
+      <div class="flex-1 overflow-y-auto no-scrollbar pb-8">
+        
+        <!-- Tipe Transaksi (Segmented Control) -->
+        <div class="px-4 mt-4">
+          <div class="bg-gray-100 p-1 rounded-xl flex gap-1 relative">
+            <!-- Indikator Latar Belakang Putih -->
+            <div id="tx-type-slider" class="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-transform duration-300 ease-in-out"></div>
+            
+            <button onclick="setTxType('pengeluaran')" id="btn-tx-pengeluaran" class="relative z-10 flex-1 text-sm font-bold py-2 text-red-600 transition-colors">Pengeluaran</button>
+            <button onclick="setTxType('pemasukan')" id="btn-tx-pemasukan" class="relative z-10 flex-1 text-sm font-medium py-2 text-gray-500 transition-colors">Pemasukan</button>
+          </div>
+        </div>
+
+        <!-- Input Nominal Giant -->
+        <div class="px-4 mt-8 flex flex-col items-center">
+          <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">Nominal (Rp)</p>
+          <input type="text" inputmode="numeric" id="input-nominal" oninput="formatRupiah(this)" class="w-full text-center text-5xl font-bold text-gray-900 bg-transparent outline-none placeholder-gray-300" placeholder="0">
+        </div>
+
+        <hr class="mx-4 mt-8 mb-6 border-gray-100">
+
+        <!-- Detail Form inputs -->
+        <div class="px-4 flex flex-col gap-5">
+          <!-- Kategori Dropdown -> Pos Anggaran -->
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">Pos Anggaran</label>
+            <div class="relative">
+              <select class="w-full appearance-none bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-xl p-4 pr-10 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <option value="" disabled selected>Pilih Pos Anggaran...</option>
+                <option value="pokok">🛒 Anggaran Kebutuhan Pokok</option>
+                <option value="anak">👶 Anggaran Anak & Toddler</option>
+                <option value="tagihan">⚡ Anggaran Tagihan Bulanan</option>
+                <option value="transport">🚗 Anggaran Transportasi</option>
+                <option value="hobi">🎉 Anggaran Rekreasi & Hobi</option>
+                <option value="gaji" class="hidden" id="opt-gaji">💼 Masuk ke Saldo Utama</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input Tanggal -->
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">Tanggal</label>
+            <input type="date" id="input-tanggal" class="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+          </div>
+
+          <!-- Input Catatan -->
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">Catatan (Opsional)</label>
+            <input type="text" placeholder="Mis: Beli pampers ukuran L promo" class="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Button -->
+      <div class="px-4 pt-4 pb-safe bg-white border-t border-gray-100 mb-4">
+        <button class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/30 hover:bg-blue-700 active:scale-[0.98] transition-all">
+          Simpan Transaksi
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= VIEW: TAMBAH POS ANGGARAN (Overlay) ================= -->
+    <div id="view-tambah-anggaran" class="absolute inset-0 z-50 bg-white flex flex-col transform translate-y-full transition-transform duration-300 ease-in-out shadow-2xl">
+      <header class="flex justify-between items-center px-4 pt-8 pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <button onclick="closeOverlay('view-tambah-anggaran')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <h2 class="text-lg font-bold text-gray-900">Tambah Pos Anggaran</h2>
+        <div class="w-8 h-8"></div>
+      </header>
+      
+      <div class="flex-1 overflow-y-auto px-4 py-6">
+        <div class="flex flex-col gap-6">
+
+          <!-- Pemilihan Ikon -->
+          <div class="flex flex-col items-center">
+             <div onclick="openOverlay('view-pilih-emoji')" id="selected-icon-display" class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-3xl mb-2 border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100 transition shadow-sm">
+               ➕
+             </div>
+             <p onclick="openOverlay('view-pilih-emoji')" class="text-xs font-bold text-blue-600 cursor-pointer hover:text-blue-800 transition">Pilih Ikon Emoji</p>
+          </div>
+
+          <!-- Input Nama Pos -->
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">Nama Pos Anggaran</label>
+            <input type="text" placeholder="Mis: Tabungan Liburan" class="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+          </div>
+
+          <!-- Input Batas Anggaran -->
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">Batas Anggaran Bulanan</label>
+            <div class="relative">
+              <span class="absolute left-4 top-4 text-gray-500 font-bold">Rp</span>
+              <input type="text" inputmode="numeric" oninput="formatRupiah(this)" placeholder="0" class="w-full bg-gray-50 border border-gray-200 text-gray-900 font-bold rounded-xl p-4 pl-12 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-lg">
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Batas target pengeluaran Anda dalam 1 bulan.</p>
+          </div>
+
+          <!-- Pemilihan Warna Label -->
+          <div>
+             <label class="block text-sm font-bold text-gray-700 mb-3">Warna Label</label>
+             <div class="flex gap-4">
+               <div class="w-8 h-8 rounded-full bg-blue-500 ring-2 ring-offset-2 ring-blue-500 cursor-pointer"></div>
+               <div class="w-8 h-8 rounded-full bg-indigo-500 cursor-pointer hover:scale-110 transition"></div>
+               <div class="w-8 h-8 rounded-full bg-emerald-500 cursor-pointer hover:scale-110 transition"></div>
+               <div class="w-8 h-8 rounded-full bg-yellow-500 cursor-pointer hover:scale-110 transition"></div>
+               <div class="w-8 h-8 rounded-full bg-red-500 cursor-pointer hover:scale-110 transition"></div>
+               <div class="w-8 h-8 rounded-full bg-pink-500 cursor-pointer hover:scale-110 transition"></div>
+             </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Footer Button -->
+      <div class="px-4 pt-4 pb-safe bg-white border-t border-gray-100 mb-4">
+        <button onclick="closeOverlay('view-tambah-anggaran')" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/30 hover:bg-blue-700 active:scale-[0.98] transition-all">
+          Buat Pos Anggaran
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= VIEW: PILIH EMOJI (Overlay Lapis Ke-2) ================= -->
+    <div id="view-pilih-emoji" class="absolute inset-0 z-[60] bg-white flex flex-col transform translate-y-full transition-transform duration-300 ease-in-out shadow-2xl">
+      <header class="flex justify-between items-center px-4 pt-8 pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <button onclick="closeOverlay('view-pilih-emoji')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <h2 class="text-lg font-bold text-gray-900">Pilih Ikon</h2>
+        <div class="w-8 h-8"></div>
+      </header>
+      
+      <div class="flex-1 overflow-y-auto px-4 py-6">
+        
+        <!-- Kategori: Kebutuhan Rumah -->
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Kebutuhan Rumah</h3>
+        <div class="grid grid-cols-5 gap-y-6 gap-x-2 mb-8 justify-items-center">
+          <button onclick="selectEmoji('🛒')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🛒</button>
+          <button onclick="selectEmoji('👶')" class="text-3xl hover:scale-125 transition-transform active:scale-95">👶</button>
+          <button onclick="selectEmoji('⚡')" class="text-3xl hover:scale-125 transition-transform active:scale-95">⚡</button>
+          <button onclick="selectEmoji('💧')" class="text-3xl hover:scale-125 transition-transform active:scale-95">💧</button>
+          <button onclick="selectEmoji('🏠')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🏠</button>
+          <button onclick="selectEmoji('📶')" class="text-3xl hover:scale-125 transition-transform active:scale-95">📶</button>
+          <button onclick="selectEmoji('🧹')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🧹</button>
+          <button onclick="selectEmoji('🛋️')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🛋️</button>
+          <button onclick="selectEmoji('🍳')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🍳</button>
+          <button onclick="selectEmoji('👕')" class="text-3xl hover:scale-125 transition-transform active:scale-95">👕</button>
+        </div>
+
+        <!-- Kategori: Transportasi & Hobi -->
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Transportasi & Rekreasi</h3>
+        <div class="grid grid-cols-5 gap-y-6 gap-x-2 mb-8 justify-items-center">
+          <button onclick="selectEmoji('🚗')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🚗</button>
+          <button onclick="selectEmoji('🏍️')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🏍️</button>
+          <button onclick="selectEmoji('⛽')" class="text-3xl hover:scale-125 transition-transform active:scale-95">⛽</button>
+          <button onclick="selectEmoji('✈️')" class="text-3xl hover:scale-125 transition-transform active:scale-95">✈️</button>
+          <button onclick="selectEmoji('🎉')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🎉</button>
+          <button onclick="selectEmoji('🎮')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🎮</button>
+          <button onclick="selectEmoji('🎬')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🎬</button>
+          <button onclick="selectEmoji('⚽')" class="text-3xl hover:scale-125 transition-transform active:scale-95">⚽</button>
+          <button onclick="selectEmoji('☕')" class="text-3xl hover:scale-125 transition-transform active:scale-95">☕</button>
+          <button onclick="selectEmoji('🍔')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🍔</button>
+        </div>
+
+        <!-- Kategori: Keuangan & Pendidikan -->
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Keuangan & Edukasi</h3>
+        <div class="grid grid-cols-5 gap-y-6 gap-x-2 mb-8 justify-items-center">
+          <button onclick="selectEmoji('🏥')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🏥</button>
+          <button onclick="selectEmoji('💊')" class="text-3xl hover:scale-125 transition-transform active:scale-95">💊</button>
+          <button onclick="selectEmoji('📚')" class="text-3xl hover:scale-125 transition-transform active:scale-95">📚</button>
+          <button onclick="selectEmoji('🎓')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🎓</button>
+          <button onclick="selectEmoji('💼')" class="text-3xl hover:scale-125 transition-transform active:scale-95">💼</button>
+          <button onclick="selectEmoji('🏦')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🏦</button>
+          <button onclick="selectEmoji('💰')" class="text-3xl hover:scale-125 transition-transform active:scale-95">💰</button>
+          <button onclick="selectEmoji('📈')" class="text-3xl hover:scale-125 transition-transform active:scale-95">📈</button>
+          <button onclick="selectEmoji('🎁')" class="text-3xl hover:scale-125 transition-transform active:scale-95">🎁</button>
+          <button onclick="selectEmoji('❤️')" class="text-3xl hover:scale-125 transition-transform active:scale-95">❤️</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= VIEW: EDIT PROFIL (Overlay) ================= -->
+    <div id="view-edit-profil" class="absolute inset-0 z-50 bg-white flex flex-col transform translate-y-full transition-transform duration-300 ease-in-out shadow-2xl">
+      <header class="flex justify-between items-center px-4 pt-8 pb-4 border-b border-gray-100 bg-white sticky top-0">
+        <button onclick="closeOverlay('view-edit-profil')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <h2 class="text-lg font-bold text-gray-900">Edit Profil</h2>
+        <div class="w-8 h-8"></div> <!-- Spacer untuk menyeimbangkan posisi judul -->
+      </header>
+      
+      <div class="flex-1 overflow-y-auto px-4 py-6">
+        <div class="flex flex-col items-center mb-8">
+          <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center border-4 border-white shadow-sm mb-3">
+            <span class="text-blue-700 font-bold text-3xl">KP</span>
+          </div>
+          <button onclick="openOverlay('view-ubah-foto')" class="text-sm font-bold text-blue-600 active:text-blue-800 transition">Ubah Foto Profil</button>
+        </div>
+
+        <div class="flex flex-col gap-5">
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">Nama Akun/Keluarga</label>
+            <input type="text" value="Keluarga Pratama" class="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">Alamat Email</label>
+            <input type="email" value="pratama.family@email.com" class="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+          </div>
+        </div>
+      </div>
+
+      <div class="px-4 pt-4 pb-safe bg-white border-t border-gray-100 mb-4">
+        <button onclick="closeOverlay('view-edit-profil')" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/30 hover:bg-blue-700 active:scale-[0.98] transition-all">
+          Simpan Perubahan
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= VIEW: UBAH FOTO PROFIL (Overlay Lapis Ke-2) ================= -->
+    <div id="view-ubah-foto" class="absolute inset-0 z-[60] bg-white flex flex-col transform translate-y-full transition-transform duration-300 ease-in-out shadow-2xl">
+      <header class="flex justify-between items-center px-4 pt-8 pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <button onclick="closeOverlay('view-ubah-foto')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <h2 class="text-lg font-bold text-gray-900">Ubah Foto</h2>
+        <div class="w-8 h-8"></div>
+      </header>
+      
+      <div class="flex-1 overflow-y-auto px-4 py-8 flex flex-col items-center">
+        
+        <!-- Preview Foto Saat Ini -->
+        <div class="w-32 h-32 bg-blue-100 rounded-full flex items-center justify-center border-4 border-white shadow-md mb-10 relative overflow-hidden">
+          <span class="text-blue-700 font-bold text-4xl">KP</span>
+        </div>
+
+        <!-- Opsi Pilihan Menu -->
+        <div class="w-full flex flex-col gap-4">
+          <button onclick="closeOverlay('view-ubah-foto')" class="w-full flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-2xl font-bold text-gray-900 transition active:scale-[0.98] border border-gray-100">
+            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-blue-600 shadow-sm">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </div>
+            <div class="text-left">
+              <span class="block">Kamera</span>
+              <span class="block text-xs text-gray-500 font-medium font-normal mt-0.5">Ambil foto baru sekarang</span>
+            </div>
+          </button>
+
+          <button onclick="closeOverlay('view-ubah-foto')" class="w-full flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-2xl font-bold text-gray-900 transition active:scale-[0.98] border border-gray-100">
+            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-indigo-600 shadow-sm">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            <div class="text-left">
+              <span class="block">Galeri Foto</span>
+              <span class="block text-xs text-gray-500 font-medium font-normal mt-0.5">Pilih dari perangkat Anda</span>
+            </div>
+          </button>
+
+          <button onclick="closeOverlay('view-ubah-foto')" class="w-full flex items-center gap-4 p-4 bg-red-50 hover:bg-red-100 rounded-2xl font-bold text-red-600 transition active:scale-[0.98] border border-red-100 mt-2">
+            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-red-600 shadow-sm">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </div>
+            <div class="text-left">
+              <span class="block">Hapus Foto</span>
+              <span class="block text-xs text-red-400 font-medium font-normal mt-0.5">Kembali ke inisial nama</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= VIEW: ANGGOTA KELUARGA (Overlay) ================= -->
+    <div id="view-anggota" class="absolute inset-0 z-50 bg-gray-50 flex flex-col transform translate-y-full transition-transform duration-300 ease-in-out shadow-2xl">
+      <header class="flex justify-between items-center px-4 pt-8 pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <button onclick="closeOverlay('view-anggota')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <h2 class="text-lg font-bold text-gray-900">Anggota Keluarga</h2>
+        <div class="w-8 h-8"></div>
+      </header>
+      
+      <div class="flex-1 overflow-y-auto px-4 py-6">
+        <div class="flex flex-col gap-4">
+          <!-- User 1 (Admin) -->
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-lg">A</div>
+              <div>
+                <p class="font-bold text-sm text-gray-900">Andi Pratama</p>
+                <p class="text-[10px] font-bold text-white bg-blue-500 rounded-md px-2 py-0.5 inline-block mt-1">Kepala / Admin</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- User 2 (Member) -->
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-pink-700 font-bold text-lg">S</div>
+              <div>
+                <p class="font-bold text-sm text-gray-900">Siti Rahma</p>
+                <p class="text-xs font-medium text-gray-500 mt-0.5">Istri • Anggota</p>
+              </div>
+            </div>
+            <button class="text-gray-400 hover:text-red-500 transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <button class="mt-6 w-full bg-white border-2 border-dashed border-gray-300 text-gray-600 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50 transition active:scale-[0.98]">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          Undang Anggota
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= VIEW: PENGATURAN APLIKASI (Overlay) ================= -->
+    <div id="view-pengaturan" class="absolute inset-0 z-50 bg-gray-50 flex flex-col transform translate-y-full transition-transform duration-300 ease-in-out shadow-2xl">
+      <header class="flex justify-between items-center px-4 pt-8 pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <button onclick="closeOverlay('view-pengaturan')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <h2 class="text-lg font-bold text-gray-900">Pengaturan</h2>
+        <div class="w-8 h-8"></div>
+      </header>
+      
+      <div class="flex-1 overflow-y-auto px-4 py-6">
+        
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Notifikasi</h3>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+          <div class="flex items-center justify-between p-4 border-b border-gray-50">
+            <div>
+              <p class="font-bold text-sm text-gray-900">Pengingat Harian</p>
+              <p class="text-xs text-gray-500 font-medium">Ingatkan untuk mencatat tiap jam 20:00</p>
+            </div>
+            <!-- Toggle UI Custom Tailwind -->
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" value="" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between p-4">
+            <div>
+              <p class="font-bold text-sm text-gray-900">Laporan Mingguan</p>
+              <p class="text-xs text-gray-500 font-medium">Kirim rekap evaluasi ke email</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" value="" class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Kecerdasan Buatan (AI)</h3>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+          <div class="flex items-center justify-between p-4">
+            <div class="flex gap-3 items-center">
+               <div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+               </div>
+               <div>
+                 <p class="font-bold text-sm text-gray-900">Integrasi Gemini AI</p>
+                 <p class="text-[10px] text-gray-500 font-medium leading-tight mt-0.5">Analisis pengeluaran & buat insight otomatis</p>
+               </div>
+            </div>
+            <!-- Toggle Gemini AI (Warna Ungu) -->
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" value="" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+          </div>
+        </div>
+
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Tampilan & Data</h3>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="flex items-center justify-between p-4 border-b border-gray-50">
+            <p class="font-bold text-sm text-gray-900">Mode Gelap (Dark Mode)</p>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" value="" class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-800"></div>
+            </label>
+          </div>
+          <button class="w-full flex items-center justify-between p-4 hover:bg-gray-50 active:bg-gray-100 transition text-left">
+            <div>
+              <p class="font-bold text-sm text-blue-600">Ekspor Data (CSV)</p>
+              <p class="text-xs text-gray-500 font-medium mt-0.5">Unduh data untuk dibuka di Excel/Spreadsheet</p>
+            </div>
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= VIEW: TENTANG APLIKASI (Overlay) ================= -->
+    <div id="view-tentang" class="absolute inset-0 z-50 bg-gray-50 flex flex-col transform translate-y-full transition-transform duration-300 ease-in-out shadow-2xl">
+      <header class="flex justify-between items-center px-4 pt-8 pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <!-- Tombol Back (Panah) -->
+        <button onclick="closeOverlay('view-tentang')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition active:scale-90">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        </button>
+        <h2 class="text-lg font-bold text-gray-900">Tentang Aplikasi</h2>
+        <div class="w-8 h-8"></div>
+      </header>
+      
+      <div class="flex-1 overflow-y-auto px-4 py-6">
+        
+        <!-- App Identity -->
+        <div class="flex flex-col items-center mb-10 mt-4">
+          <div class="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30 mb-4 transform rotate-3">
+            <svg class="w-10 h-10 text-white transform -rotate-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 text-center leading-tight">Keuangan<br>Rumah Tangga</h2>
+          <p class="text-sm font-medium text-gray-500 mt-2">Versi 1.0.0</p>
+        </div>
+
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Fitur Unggulan</h3>
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col mb-8">
+          
+          <!-- Feature 1 -->
+          <div class="p-4 border-b border-gray-50 flex gap-4 items-start">
+            <div class="text-blue-500 text-2xl shrink-0 mt-0.5">💼</div>
+            <div>
+              <p class="font-bold text-sm text-gray-900">Sistem Pos Anggaran</p>
+              <p class="text-xs text-gray-500 leading-relaxed mt-1">Alokasikan gaji ke pos-pos khusus (envelope budgeting) untuk memastikan pengeluaran selalu sesuai batas bulanan.</p>
+            </div>
+          </div>
+
+          <!-- Feature 2 -->
+          <div class="p-4 border-b border-gray-50 flex gap-4 items-start">
+            <div class="text-green-500 text-2xl shrink-0 mt-0.5">📊</div>
+            <div>
+              <p class="font-bold text-sm text-gray-900">Visualisasi Data Responsif</p>
+              <p class="text-xs text-gray-500 leading-relaxed mt-1">Laporan disajikan lewat grafik interaktif (batang & donat) agar arus kas lebih mudah dipahami secara visual.</p>
+            </div>
+          </div>
+
+          <!-- Feature 3 -->
+          <div class="p-4 border-b border-gray-50 flex gap-4 items-start">
+            <div class="text-purple-500 text-2xl shrink-0 mt-0.5">✨</div>
+            <div>
+              <p class="font-bold text-sm text-gray-900">Insight Cerdas (Gemini AI)</p>
+              <p class="text-xs text-gray-500 leading-relaxed mt-1">Terintegrasi dengan Artificial Intelligence untuk memberikan kesimpulan, saran finansial, dan peringatan dini otomatis.</p>
+            </div>
+          </div>
+
+          <!-- Feature 4 -->
+          <div class="p-4 flex gap-4 items-start">
+            <div class="text-pink-500 text-2xl shrink-0 mt-0.5">👨‍👩‍👧‍👦</div>
+            <div>
+              <p class="font-bold text-sm text-gray-900">Kolaborasi Keluarga</p>
+              <p class="text-xs text-gray-500 leading-relaxed mt-1">Undang pasangan (suami/istri) untuk mencatat pengeluaran di satu akun yang sama secara real-time.</p>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="text-center pb-8">
+          <p class="text-xs text-gray-400 leading-relaxed">Dirancang khusus untuk membantu<br>keluarga mencapai kebebasan finansial.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= VIEW: SEMUA TRANSAKSI (Overlay) ================= -->
+    <div id="view-semua-transaksi" class="absolute inset-0 z-50 bg-gray-50 flex flex-col transform translate-y-full transition-transform duration-300 ease-in-out shadow-2xl">
+      <header class="flex justify-between items-center px-4 pt-8 pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <!-- Tombol Back (Panah) -->
+        <button onclick="closeOverlay('view-semua-transaksi')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition active:scale-90">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        </button>
+        <h2 class="text-lg font-bold text-gray-900">Riwayat Transaksi</h2>
+        <!-- Tombol Filter/Cari -->
+        <button class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition active:scale-90">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+        </button>
+      </header>
+      
+      <div class="flex-1 overflow-y-auto pb-8">
+        
+        <!-- Filter Cepat -->
+        <div class="px-4 py-3 bg-white border-b border-gray-100 flex gap-2 overflow-x-auto no-scrollbar sticky top-0 z-0">
+           <button class="px-4 py-1.5 bg-gray-900 text-white text-xs font-bold rounded-full whitespace-nowrap shadow-sm">Semua</button>
+           <button class="px-4 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-bold rounded-full whitespace-nowrap transition">Pemasukan</button>
+           <button class="px-4 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-bold rounded-full whitespace-nowrap transition">Pengeluaran</button>
+        </div>
+
+        <!-- Grup: Hari Ini -->
+        <div class="px-4 mt-5">
+           <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 pl-1">Hari Ini, 5 Mei 2026</h3>
+           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col gap-6">
+             
+             <!-- Item -->
+             <div class="flex justify-between items-center">
+               <div class="flex items-center gap-4">
+                 <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-xl border border-blue-100">👶</div>
+                 <div>
+                   <p class="font-bold text-gray-900 text-sm">Susu & Popok</p>
+                   <p class="text-xs text-gray-500 font-medium mt-0.5">Dana Anak • 14:30</p>
+                 </div>
+               </div>
+               <p class="font-bold text-gray-900 text-sm">- Rp 350.000</p>
+             </div>
+
+             <hr class="border-gray-50">
+
+             <!-- Item -->
+             <div class="flex justify-between items-center">
+               <div class="flex items-center gap-4">
+                 <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-xl border border-emerald-100">☕</div>
+                 <div>
+                   <p class="font-bold text-gray-900 text-sm">Kopi & Roti</p>
+                   <p class="text-xs text-gray-500 font-medium mt-0.5">Dana Rekreasi • 08:15</p>
+                 </div>
+               </div>
+               <p class="font-bold text-gray-900 text-sm">- Rp 45.000</p>
+             </div>
+
+           </div>
+        </div>
+
+        <!-- Grup: Kemarin -->
+        <div class="px-4 mt-6">
+           <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 pl-1">Kemarin, 4 Mei 2026</h3>
+           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col gap-6">
+             
+             <!-- Item -->
+             <div class="flex justify-between items-center">
+               <div class="flex items-center gap-4">
+                 <div class="w-12 h-12 rounded-2xl bg-yellow-50 flex items-center justify-center text-xl border border-yellow-100">⚡</div>
+                 <div>
+                   <p class="font-bold text-gray-900 text-sm">Token PLN</p>
+                   <p class="text-xs text-gray-500 font-medium mt-0.5">Dana Tagihan • 18:00</p>
+                 </div>
+               </div>
+               <p class="font-bold text-gray-900 text-sm">- Rp 200.000</p>
+             </div>
+
+             <hr class="border-gray-50">
+
+             <!-- Item -->
+             <div class="flex justify-between items-center">
+               <div class="flex items-center gap-4">
+                 <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-xl border border-blue-100">🛒</div>
+                 <div>
+                   <p class="font-bold text-gray-900 text-sm">Belanja Sayur</p>
+                   <p class="text-xs text-gray-500 font-medium mt-0.5">Dana Pokok • 06:30</p>
+                 </div>
+               </div>
+               <p class="font-bold text-gray-900 text-sm">- Rp 85.000</p>
+             </div>
+
+           </div>
+        </div>
+
+        <!-- Grup: Awal Bulan -->
+        <div class="px-4 mt-6 mb-4">
+           <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 pl-1">1 Mei 2026</h3>
+           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col gap-6">
+             
+             <!-- Item Pemasukan -->
+             <div class="flex justify-between items-center">
+               <div class="flex items-center gap-4">
+                 <div class="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-xl border border-green-100">💼</div>
+                 <div>
+                   <p class="font-bold text-gray-900 text-sm">Gaji Suami</p>
+                   <p class="text-xs text-gray-500 font-medium mt-0.5">Masuk ke Saldo Utama</p>
+                 </div>
+               </div>
+               <p class="font-bold text-green-600 text-sm">+ Rp 7.000.000</p>
+             </div>
+
+           </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= VIEW: NOTIFIKASI (Overlay Baru) ================= -->
+    <div id="view-notifikasi" class="absolute inset-0 z-50 bg-gray-50 flex flex-col transform translate-y-full transition-transform duration-300 ease-in-out shadow-2xl">
+      <header class="flex justify-between items-center px-4 pt-8 pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <!-- Tombol Back (Panah) -->
+        <button onclick="closeOverlay('view-notifikasi')" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition active:scale-90">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        </button>
+        <h2 class="text-lg font-bold text-gray-900">Notifikasi</h2>
+        <button class="text-[10px] font-bold text-blue-600 hover:text-blue-800 transition uppercase tracking-wide">Tandai Dibaca</button>
+      </header>
+      
+      <div class="flex-1 overflow-y-auto pb-8">
+        
+        <div class="flex flex-col">
+          
+          <!-- Notifikasi 1: Insight Cerdas (Baru) -->
+          <div class="p-4 bg-indigo-50/50 border-b border-indigo-100 flex gap-4 items-start relative">
+            <!-- Garis Indikator Baru -->
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
+            
+            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 mt-1 shadow-sm border border-indigo-200">
+              💡
+            </div>
+            <div class="flex-1">
+              <div class="flex justify-between items-start mb-1">
+                <p class="font-bold text-sm text-indigo-900">Insight Mingguan Anda</p>
+                <span class="text-[10px] text-indigo-500 font-bold bg-white px-2 py-0.5 rounded-full shadow-sm border border-indigo-100">Baru</span>
+              </div>
+              <p class="text-xs text-indigo-800 leading-relaxed mb-2">Pengeluaran <strong>Kebutuhan Pokok</strong> menyumbang porsi terbesar (48%) minggu ini. Arus kas Anda secara keseluruhan sangat sehat!</p>
+              <button onclick="closeOverlay('view-notifikasi'); switchView('laporan');" class="text-[10px] font-bold text-indigo-600 uppercase tracking-wide hover:underline">Lihat Laporan Lengkap →</button>
+            </div>
+          </div>
+
+          <!-- Notifikasi 2: Peringatan Anggaran -->
+          <div class="p-4 bg-white border-b border-gray-100 flex gap-4 items-start">
+            <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0 mt-1 border border-red-100">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <div class="flex-1">
+              <div class="flex justify-between items-start mb-1">
+                <p class="font-bold text-sm text-gray-900">Anggaran Anak Menipis!</p>
+                <span class="text-[10px] text-gray-400 font-medium">10 mnt lalu</span>
+              </div>
+              <p class="text-xs text-gray-500 leading-relaxed">Sisa anggaran <strong>Anak & Toddler</strong> tersisa Rp 200.000 (20%). Harap perhatikan pengeluaran untuk pos ini.</p>
+            </div>
+          </div>
+
+          <!-- Notifikasi 3: Info Sistem -->
+          <div class="p-4 bg-white border-b border-gray-100 flex gap-4 items-start opacity-75">
+            <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 shrink-0 mt-1 border border-blue-100">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            <div class="flex-1">
+              <div class="flex justify-between items-start mb-1">
+                <p class="font-bold text-sm text-gray-900">Rekap April Tersedia</p>
+                <span class="text-[10px] text-gray-400 font-medium">1 Mei</span>
+              </div>
+              <p class="text-xs text-gray-500 leading-relaxed">Seluruh pencatatan bulan April 2026 telah dirangkum. Rata-rata Anda berhasil menghemat Rp 1.6jt bulan lalu.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Script Logika UI -->
+  <script>
+    // --- 1. Logika Navigasi ---
+    function switchView(viewName) {
+      const views = ['beranda', 'laporan', 'anggaran', 'profil'];
+      const headerTeks = document.getElementById('header-teks');
+
+      views.forEach(v => {
+        const viewEl = document.getElementById(`view-${v}`);
+        const navEl = document.getElementById(`nav-${v}`);
+        
+        // Lewati jika tombol navigasinya tidak ada (seperti FAB)
+        if(!navEl) return;
+
+        if (v === viewName) {
+          // Tampilkan view
+          viewEl.classList.remove('hidden');
+          setTimeout(() => viewEl.classList.replace('opacity-0', 'opacity-100'), 10);
+          
+          // Aktifkan style nav
+          navEl.classList.replace('text-gray-400', 'text-blue-600');
+          navEl.querySelector('span').classList.replace('font-medium', 'font-bold');
+        } else {
+          // Sembunyikan view
+          viewEl.classList.replace('opacity-100', 'opacity-0');
+          setTimeout(() => viewEl.classList.add('hidden'), 300);
+          
+          // Nonaktifkan style nav
+          navEl.classList.replace('text-blue-600', 'text-gray-400');
+          navEl.querySelector('span').classList.replace('font-bold', 'font-medium');
+        }
+      });
+
+      // Update Teks Header berdasarkan halaman aktif
+      if (viewName === 'beranda') {
+        headerTeks.innerHTML = `<p class="text-sm font-medium text-gray-500">Selamat datang,</p><h1 class="text-lg font-bold text-gray-900">Keluarga Pratama</h1>`;
+      } 
+      else if (viewName === 'laporan') {
+        headerTeks.innerHTML = `<p class="text-sm font-medium text-gray-500">Analisis Keuangan</p><h1 class="text-lg font-bold text-gray-900">Laporan Anda</h1>`;
+        if(!financeChartInstance) initChart();
+      }
+      else if (viewName === 'anggaran') {
+        headerTeks.innerHTML = `<p class="text-sm font-medium text-gray-500">Alokasi & Perencanaan</p><h1 class="text-lg font-bold text-gray-900">Anggaran</h1>`;
+      }
+      else if (viewName === 'profil') {
+        headerTeks.innerHTML = `<p class="text-sm font-medium text-gray-500">Pengaturan</p><h1 class="text-lg font-bold text-gray-900">Profil Saya</h1>`;
+      }
+    }
+
+    // --- 2. Logika Grafik (Chart.js) ---
+    let financeChartInstance = null;
+    let categoryChartInstance = null; // Instance untuk Donut Chart
+    
+    // Data dummy untuk simulasi filter
+    const chartDataObj = {
+      harian: {
+        labels: ['Pagi', 'Siang', 'Sore', 'Malam'],
+        masuk: [0, 0, 0, 0],
+        keluar: [0, 0, 0, 0],
+        totalMasuk: "Rp 0",
+        totalKeluar: "Rp 0",
+        periode: "Hari Ini, 5 Mei 2026",
+        insight: `
+          <li>Belum ada aktivitas transaksi hari ini.</li>
+          <li>Jangan lupa catat setiap pengeluaran kecil agar keuangan tetap terpantau akurat.</li>
+        `
+      },
+      mingguan: {
+        labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+        masuk: [0, 7000000, 0, 0, 0, 0, 0],
+        keluar: [150000, 350000, 200000, 500000, 100000, 800000, 400000],
+        totalMasuk: "Rp 7.000.000",
+        totalKeluar: "Rp 2.500.000",
+        periode: "1 Mei - 7 Mei 2026",
+        insight: `
+          <li>Pengeluaran <strong>Kebutuhan Pokok</strong> menyumbang porsi terbesar (48%) minggu ini.</li>
+          <li>Pemasukan Anda jauh lebih besar dari pengeluaran. Sisa dana bisa ditabung!</li>
+        `
+      },
+      bulanan: {
+        labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
+        masuk: [7000000, 0, 1500000, 0],
+        keluar: [2500000, 1200000, 800000, 1500000],
+        totalMasuk: "Rp 8.500.000",
+        totalKeluar: "Rp 6.000.000",
+        periode: "Mei 2026",
+        insight: `
+          <li>Total pengeluaran bulan ini mencapai <strong>70%</strong> dari pemasukan. Hati-hati di minggu ke-4!</li>
+          <li>Tagihan bulanan sudah lunas dibayarkan pada minggu pertama.</li>
+        `
+      },
+      semua: {
+        labels: ['Feb', 'Mar', 'Apr', 'Mei'],
+        masuk: [8000000, 8200000, 8000000, 8500000],
+        keluar: [6500000, 7000000, 6800000, 6000000],
+        totalMasuk: "Rp 32.700.000",
+        totalKeluar: "Rp 26.300.000",
+        periode: "Tahun 2026",
+        insight: `
+          <li>Arus kas Anda <strong>sangat sehat</strong>. Pemasukan selalu stabil di atas angka pengeluaran tiap bulannya.</li>
+          <li>Rata-rata Anda berhasil menghemat <strong>Rp 1.6jt</strong> per bulan. Teruskan performa ini!</li>
+        `
+      }
+    };
+
+    function initChart() {
+      const ctx = document.getElementById('financeChart').getContext('2d');
+      Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      
+      financeChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartDataObj.mingguan.labels,
+          datasets: [
+            {
+              label: 'Masuk',
+              data: chartDataObj.mingguan.masuk,
+              backgroundColor: '#10B981', // green-500
+              borderRadius: 4,
+              barPercentage: 0.6,
+              categoryPercentage: 0.8
+            },
+            {
+              label: 'Keluar',
+              data: chartDataObj.mingguan.keluar,
+              backgroundColor: '#EF4444', // red-500
+              borderRadius: 4,
+              barPercentage: 0.6,
+              categoryPercentage: 0.8
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: { usePointStyle: true, boxWidth: 8, padding: 20 }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label) { label += ': '; }
+                  if (context.parsed.y !== null) {
+                    label += 'Rp ' + context.parsed.y.toLocaleString('id-ID');
+                  }
+                  return label;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { borderDash: [4, 4], color: '#E5E7EB', drawBorder: false },
+              ticks: {
+                display: false // Sembunyikan angka Y axis agar lebih bersih di layar kecil
+              }
+            },
+            x: {
+              grid: { display: false, drawBorder: false },
+              ticks: { font: { size: 10 }, color: '#6B7280' }
+            }
+          },
+          interaction: { mode: 'index', intersect: false }
+        }
+      });
+
+      // Inisialisasi Donut Chart Kategori
+      const ctxCat = document.getElementById('categoryChart').getContext('2d');
+      categoryChartInstance = new Chart(ctxCat, {
+        type: 'doughnut',
+        data: {
+          labels: ['Dana Pokok', 'Dana Anak', 'Dana Tagihan'],
+          datasets: [{
+            data: [1200000, 800000, 500000],
+            backgroundColor: ['#3B82F6', '#6366F1', '#EAB308'], // Warna selaras dgn list di bawahnya
+            borderWidth: 3, // Memberi jarak antar irisan donat
+            borderColor: '#ffffff',
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '75%', // Mengatur seberapa besar lubang donat di tengah
+          plugins: {
+            legend: {
+              display: false // Sembunyikan legenda karena sudah ada rincian di bawah
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.label || '';
+                  if (label) { label += ': '; }
+                  if (context.parsed !== null) {
+                    label += 'Rp ' + context.parsed.toLocaleString('id-ID');
+                  }
+                  return label;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateChartFilter(period, btnElement) {
+      // 1. Update UI tombol filter
+      const buttons = document.querySelectorAll('.filter-btn');
+      buttons.forEach(btn => {
+        btn.classList.remove('bg-white', 'shadow-sm', 'text-gray-900', 'font-bold');
+        btn.classList.add('text-gray-500', 'font-medium');
+      });
+      
+      btnElement.classList.remove('text-gray-500', 'font-medium');
+      btnElement.classList.add('bg-white', 'shadow-sm', 'text-gray-900', 'font-bold');
+
+      // 2. Update Data Ringkasan Teks & Insight
+      const data = chartDataObj[period];
+      document.getElementById('laporan-periode-teks').innerText = data.periode;
+      document.getElementById('lap-pemasukan').innerText = data.totalMasuk;
+      document.getElementById('lap-pengeluaran').innerText = data.totalKeluar;
+      document.getElementById('insight-list').innerHTML = data.insight; // Update insight secara dinamis
+
+      // 3. Logika Tampilkan/Sembunyikan Empty State
+      const financeEmptyState = document.getElementById('finance-empty-state');
+      const categoryEmptyState = document.getElementById('category-empty-state');
+      const categoryContent = document.getElementById('category-content');
+
+      // Cek jika seluruh array bernilai 0
+      const isDataEmpty = data.masuk.every(v => v === 0) && data.keluar.every(v => v === 0);
+      
+      if (isDataEmpty) {
+        financeEmptyState.classList.remove('hidden');
+        categoryEmptyState.classList.remove('hidden');
+        categoryEmptyState.classList.add('flex');
+        categoryContent.classList.add('hidden');
+      } else {
+        financeEmptyState.classList.add('hidden');
+        categoryEmptyState.classList.add('hidden');
+        categoryEmptyState.classList.remove('flex');
+        categoryContent.classList.remove('hidden');
+      }
+
+      // 4. Update Chart.js Data
+      if(financeChartInstance) {
+        financeChartInstance.data.labels = data.labels;
+        financeChartInstance.data.datasets[0].data = data.masuk;
+        financeChartInstance.data.datasets[1].data = data.keluar;
+        financeChartInstance.update();
+      }
+    }
+
+    // --- 3. Logika Overlay (Generic) ---
+    function openOverlay(id) {
+      const view = document.getElementById(id);
+      view.classList.remove('translate-y-full');
+      view.classList.add('translate-y-0');
+    }
+
+    function closeOverlay(id) {
+      const view = document.getElementById(id);
+      view.classList.remove('translate-y-0');
+      view.classList.add('translate-y-full');
+    }
+
+    // --- 4. Logika Pemilihan Emoji ---
+    function selectEmoji(emoji) {
+      const iconDisplay = document.getElementById('selected-icon-display');
+      // Ubah teks emoji
+      iconDisplay.innerText = emoji;
+      // Hapus border putus-putus setelah dipilih agar terlihat solid dan rapi
+      iconDisplay.classList.remove('border-dashed', 'border-gray-300', 'text-gray-300');
+      iconDisplay.classList.add('border-solid', 'border-blue-200', 'bg-blue-50');
+      
+      // Tutup pop-up pemilih emoji
+      closeOverlay('view-pilih-emoji');
+    }
+
+    // --- 5. Logika Sembunyikan Saldo (Mata) ---
+    let isBalanceHidden = false;
+    function toggleBalance() {
+      isBalanceHidden = !isBalanceHidden;
+
+      // Elemen Teks Saldo
+      const mainBal = document.getElementById('main-balance');
+      const mainBalHidden = document.getElementById('main-balance-hidden');
+      const inBal = document.getElementById('in-balance');
+      const inBalHidden = document.getElementById('in-balance-hidden');
+      const outBal = document.getElementById('out-balance');
+      const outBalHidden = document.getElementById('out-balance-hidden');
+      
+      // Elemen Ikon Mata
+      const iconOpen = document.getElementById('eye-icon-open');
+      const iconClosed = document.getElementById('eye-icon-closed');
+
+      if (isBalanceHidden) {
+        // Sembunyikan
+        mainBal.classList.add('hidden');
+        inBal.classList.add('hidden');
+        outBal.classList.add('hidden');
+        iconOpen.classList.add('hidden');
+        
+        mainBalHidden.classList.remove('hidden');
+        inBalHidden.classList.remove('hidden');
+        outBalHidden.classList.remove('hidden');
+        iconClosed.classList.remove('hidden');
+      } else {
+        // Tampilkan
+        mainBal.classList.remove('hidden');
+        inBal.classList.remove('hidden');
+        outBal.classList.remove('hidden');
+        iconOpen.classList.remove('hidden');
+        
+        mainBalHidden.classList.add('hidden');
+        inBalHidden.classList.add('hidden');
+        outBalHidden.classList.add('hidden');
+        iconClosed.classList.add('hidden');
+      }
+    }
+
+    // --- 6. Logika Overlay Tambah Transaksi (Spesifik) ---
+    function openAddTransaction() {
+      openOverlay('view-tambah');
+      
+      // Set default tanggal hari ini
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('input-tanggal').value = today;
+      
+      // Auto-focus nominal form slightly after animation finishes
+      setTimeout(() => {
+        document.getElementById('input-nominal').focus();
+      }, 350);
+    }
+
+    function closeAddTransaction() {
+      closeOverlay('view-tambah');
+      
+      // Reset form
+      document.getElementById('input-nominal').value = '';
+    }
+
+    function setTxType(type) {
+      const slider = document.getElementById('tx-type-slider');
+      const btnPengeluaran = document.getElementById('btn-tx-pengeluaran');
+      const btnPemasukan = document.getElementById('btn-tx-pemasukan');
+      const optGaji = document.getElementById('opt-gaji');
+      
+      if(type === 'pengeluaran') {
+        slider.style.transform = 'translateX(0)';
+        
+        btnPengeluaran.classList.replace('text-gray-500', 'text-red-600');
+        btnPengeluaran.classList.replace('font-medium', 'font-bold');
+        
+        btnPemasukan.classList.replace('text-green-600', 'text-gray-500');
+        btnPemasukan.classList.replace('font-bold', 'font-medium');
+        
+        optGaji.classList.add('hidden'); // Sembunyikan kategori pemasukan
+      } else {
+        // Pemasukan clicked
+        slider.style.transform = 'translateX(100%)';
+        
+        btnPemasukan.classList.replace('text-gray-500', 'text-green-600');
+        btnPemasukan.classList.replace('font-medium', 'font-bold');
+        
+        btnPengeluaran.classList.replace('text-red-600', 'text-gray-500');
+        btnPengeluaran.classList.replace('font-bold', 'font-medium');
+        
+        optGaji.classList.remove('hidden'); // Tampilkan kategori pemasukan
+      }
+    }
+
+    // Format auto titik ribuan (Rp)
+    function formatRupiah(input) {
+      let value = input.value.replace(/[^,\d]/g, '').toString();
+      let split = value.split(',');
+      let sisa = split[0].length % 3;
+      let rupiah = split[0].substr(0, sisa);
+      let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+      if (ribuan) {
+        let separator = sisa ? '.' : '';
+        rupiah += separator + ribuan.join('.');
+      }
+
+      rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+      input.value = rupiah;
+    }
+  </script>
+</body>
+</html>
