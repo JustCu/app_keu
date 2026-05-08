@@ -110,6 +110,28 @@ function getNotificationReadRowIndex(rows, userId, familyId) {
   return -1;
 }
 
+function getInsightHistoryRowIndex(
+  rows,
+  familyId,
+  categoryName,
+  categoryType,
+  period,
+  weekStart,
+) {
+  for (let i = 1; i < rows.length; i++) {
+    if (
+      String(rows[i][1] || "") === String(familyId || "") &&
+      String(rows[i][2] || "") === String(categoryName || "") &&
+      String(rows[i][3] || "") === String(categoryType || "") &&
+      String(rows[i][4] || "") === String(period || "") &&
+      String(rows[i][5] || "") === String(weekStart || "")
+    ) {
+      return i + 1;
+    }
+  }
+  return -1;
+}
+
 const ROLLBACK_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function ensureSheetHeaders(sheetName, headers, options) {
@@ -213,6 +235,23 @@ function initSheets() {
     "UserId",
     "FamilyId",
     "ReadMap",
+    "UpdatedAt",
+  ]);
+
+  ensureSheetHeaders("AI_Insight_History", [
+    "ID",
+    "FamilyId",
+    "CategoryName",
+    "CategoryType",
+    "Period",
+    "WeekStart",
+    "WeekEnd",
+    "Score",
+    "Summary",
+    "ReasonsJson",
+    "TipsJson",
+    "Source",
+    "CreatedAt",
     "UpdatedAt",
   ]);
 }
@@ -414,7 +453,7 @@ function handleRequest(e, isPost) {
           },
         };
       }
-    } else if (action === "getNotificationReads") {
+    } else if (action === "getUserSettings") {
       const userId = e.parameter.userId || "";
       const familyId = e.parameter.familyId || "";
       if (!userId || !familyId) throw new Error("userId & familyId required");
@@ -441,84 +480,100 @@ function handleRequest(e, isPost) {
           "WeeklyReportEmail",
           "UpdatedAt",
         ]);
+        const sSheet = ss.getSheetByName("User_Settings");
+        const sData = sSheet ? sSheet.getDataRange().getValues() : [];
+        const row = sData
+          .slice(1)
+          .find((r) => r[1] === userId && r[2] === familyId);
+        output.data = row
+          ? {
+              dailyReminderEnabled: row[3] === true || row[3] === "TRUE",
+              dailyReminderTime: row[4] || "20:00",
+              weeklyReportEnabled: row[5] === true || row[5] === "TRUE",
+              weeklyReportEmail: row[6] || user.email || "",
+            }
+          : {
+              dailyReminderEnabled: false,
+              dailyReminderTime: "20:00",
+              weeklyReportEnabled: false,
+              weeklyReportEmail: user.email || "",
+            };
+      }
+    } else if (action === "upsertUserSettings" && isPost) {
+      const p = JSON.parse(e.postData.contents);
+      const userId = p.userId || "";
+      const familyId = p.familyId || "";
+      if (!userId || !familyId) throw new Error("userId & familyId required");
 
+      const ss = getSpreadsheet();
+      const uSheet = ss.getSheetByName("Users");
+      const uData = uSheet ? uSheet.getDataRange().getValues() : [];
+      const user = getUserById(uData, userId);
+      if (
+        !user ||
+        user.familyId !== familyId ||
+        !isFamilyMember(ss, userId, familyId)
+      ) {
+        output.status = "error";
+        output.message = "FORBIDDEN";
+      } else {
+        ensureSheetHeaders("User_Settings", [
+          "ID",
+          "UserId",
+          "FamilyId",
+          "DailyReminderEnabled",
+          "DailyReminderTime",
+          "WeeklyReportEnabled",
+          "WeeklyReportEmail",
+          "UpdatedAt",
+        ]);
+        const sSheet = ss.getSheetByName("User_Settings");
+        const sData = sSheet.getDataRange().getValues();
+        const rowIdx = getSettingsRowIndex(sData, userId, familyId);
+        const updatedAt = new Date().toISOString();
+        const dailyEnabled = p.dailyReminderEnabled === true;
+        const dailyTime = String(p.dailyReminderTime || "20:00");
+        const weeklyEnabled = p.weeklyReportEnabled === true;
+        const weeklyEmail = String(p.weeklyReportEmail || user.email || "");
+        if (rowIdx === -1) {
+          sSheet.appendRow([
+            generateId(),
+            userId,
+            familyId,
+            dailyEnabled,
+            dailyTime,
+            weeklyEnabled,
+            weeklyEmail,
+            updatedAt,
+          ]);
+        } else {
+          sSheet.getRange(rowIdx, 4).setValue(dailyEnabled);
+          sSheet.getRange(rowIdx, 5).setValue(dailyTime);
+          sSheet.getRange(rowIdx, 6).setValue(weeklyEnabled);
+          sSheet.getRange(rowIdx, 7).setValue(weeklyEmail);
+          sSheet.getRange(rowIdx, 8).setValue(updatedAt);
+        }
+        output.data = { updatedAt };
+        output.message = "Pengaturan berhasil disimpan";
+      }
+    } else if (action === "getNotificationReads") {
+      const userId = e.parameter.userId || "";
+      const familyId = e.parameter.familyId || "";
+      if (!userId || !familyId) throw new Error("userId & familyId required");
+
+      const ss = getSpreadsheet();
+      const uSheet = ss.getSheetByName("Users");
+      const uData = uSheet ? uSheet.getDataRange().getValues() : [];
+      const user = getUserById(uData, userId);
+      if (
+        !user ||
+        user.familyId !== familyId ||
+        !isFamilyMember(ss, userId, familyId)
+      ) {
+        output.status = "error";
+        output.message = "FORBIDDEN";
+      } else {
         ensureSheetHeaders("Notification_Reads", [
-              } else if (action === "getUserSettings") {
-                const userId = e.parameter.userId || "";
-                const familyId = e.parameter.familyId || "";
-                if (!userId || !familyId) throw new Error("userId & familyId required");
-                const ss = getSpreadsheet();
-                const uSheet = ss.getSheetByName("Users");
-                const uData = uSheet ? uSheet.getDataRange().getValues() : [];
-                const user = getUserById(uData, userId);
-                if (!user || !isFamilyMember(ss, userId, familyId)) {
-                  output.status = "error";
-                  output.message = "FORBIDDEN";
-                } else {
-                  ensureSheetHeaders("User_Settings", [
-                    "ID", "UserId", "FamilyId",
-                    "DailyReminderEnabled", "DailyReminderTime",
-                    "WeeklyReportEnabled", "WeeklyReportEmail", "UpdatedAt",
-                  ]);
-                  const sSheet = ss.getSheetByName("User_Settings");
-                  const sData = sSheet ? sSheet.getDataRange().getValues() : [];
-                  const row = sData.slice(1).find((r) => r[1] === userId && r[2] === familyId);
-                  output.data = row
-                    ? {
-                        dailyReminderEnabled: row[3] === true || row[3] === "TRUE",
-                        dailyReminderTime: row[4] || "20:00",
-                        weeklyReportEnabled: row[5] === true || row[5] === "TRUE",
-                        weeklyReportEmail: row[6] || user.email || "",
-                      }
-                    : {
-                        dailyReminderEnabled: false,
-                        dailyReminderTime: "20:00",
-                        weeklyReportEnabled: false,
-                        weeklyReportEmail: user.email || "",
-                      };
-                }
-              } else if (action === "upsertUserSettings" && isPost) {
-                const p = JSON.parse(e.postData.contents);
-                const userId = p.userId || "";
-                const familyId = p.familyId || "";
-                if (!userId || !familyId) throw new Error("userId & familyId required");
-                const ss = getSpreadsheet();
-                const uSheet = ss.getSheetByName("Users");
-                const uData = uSheet ? uSheet.getDataRange().getValues() : [];
-                const user = getUserById(uData, userId);
-                if (!user || !isFamilyMember(ss, userId, familyId)) {
-                  output.status = "error";
-                  output.message = "FORBIDDEN";
-                } else {
-                  ensureSheetHeaders("User_Settings", [
-                    "ID", "UserId", "FamilyId",
-                    "DailyReminderEnabled", "DailyReminderTime",
-                    "WeeklyReportEnabled", "WeeklyReportEmail", "UpdatedAt",
-                  ]);
-                  const sSheet = ss.getSheetByName("User_Settings");
-                  const sData = sSheet.getDataRange().getValues();
-                  const rowIdx = getSettingsRowIndex(sData, userId, familyId);
-                  const updatedAt = new Date().toISOString();
-                  const dailyEnabled = p.dailyReminderEnabled === true;
-                  const dailyTime = String(p.dailyReminderTime || "20:00");
-                  const weeklyEnabled = p.weeklyReportEnabled === true;
-                  const weeklyEmail = String(p.weeklyReportEmail || user.email || "");
-                  if (rowIdx === -1) {
-                    sSheet.appendRow([
-                      generateId(), userId, familyId,
-                      dailyEnabled, dailyTime, weeklyEnabled, weeklyEmail, updatedAt,
-                    ]);
-                  } else {
-                    sSheet.getRange(rowIdx, 4).setValue(dailyEnabled);
-                    sSheet.getRange(rowIdx, 5).setValue(dailyTime);
-                    sSheet.getRange(rowIdx, 6).setValue(weeklyEnabled);
-                    sSheet.getRange(rowIdx, 7).setValue(weeklyEmail);
-                    sSheet.getRange(rowIdx, 8).setValue(updatedAt);
-                  }
-                  output.data = { updatedAt };
-                  output.message = "Pengaturan berhasil disimpan";
-                }
-              } else if (action === "getNotificationReads") {
           "ID",
           "UserId",
           "FamilyId",
@@ -1493,6 +1548,403 @@ function handleRequest(e, isPost) {
           output.message = "Gagal: " + (json.error?.message || "Unknown");
         }
       }
+    } else if (action === "getAICategoryInsight") {
+      const reqBody = isPost ? parseJSONSafe(e.postData.contents, {}) : {};
+      const familyId = String(reqBody.familyId || e.parameter.familyId || "");
+      const categoryName = String(
+        reqBody.categoryName || e.parameter.categoryName || "",
+      ).trim();
+      const categoryType = String(
+        reqBody.categoryType || e.parameter.categoryType || "pengeluaran",
+      ).toLowerCase();
+      const period = String(
+        reqBody.period || e.parameter.period || "bulanan",
+      ).toLowerCase();
+
+      if (!familyId || !categoryName) {
+        output.status = "error";
+        output.message = "familyId & categoryName required";
+      } else {
+        const now = new Date();
+        const cm = now.getMonth();
+        const cy = now.getFullYear();
+        const todayStart = new Date(cy, cm, now.getDate());
+        const todayEnd = new Date(cy, cm, now.getDate(), 23, 59, 59, 999);
+        const rollingWeekStart = new Date(todayStart);
+        rollingWeekStart.setDate(rollingWeekStart.getDate() - 6);
+
+        const isInSelectedPeriod = (d) => {
+          if (period === "hariini") {
+            return d >= todayStart && d <= todayEnd;
+          }
+          if (period === "mingguan") {
+            return d >= rollingWeekStart && d <= todayEnd;
+          }
+          if (period === "semua") {
+            return d.getFullYear() === cy;
+          }
+          return d.getMonth() === cm && d.getFullYear() === cy;
+        };
+
+        const periodLabel =
+          period === "hariini"
+            ? `Hari Ini, ${Utilities.formatDate(now, "Asia/Jakarta", "d MMMM yyyy")}`
+            : period === "mingguan"
+              ? `${Utilities.formatDate(rollingWeekStart, "Asia/Jakarta", "d MMM")} - ${Utilities.formatDate(now, "Asia/Jakarta", "d MMM yyyy")}`
+              : period === "semua"
+                ? `Tahun ${cy}`
+                : Utilities.formatDate(now, "Asia/Jakarta", "MMMM yyyy");
+
+        const transaksi = getFilteredData("Transaksi", familyId, 6);
+        const posAnggaran = getFilteredData("Pos_Anggaran", familyId, 5);
+
+        const targetPos = posAnggaran.find(
+          (p) => String(p.Nama || "").trim() === categoryName,
+        );
+        const budgetLimit =
+          parseInt(String(targetPos?.Batas || "").replace(/[^0-9]/g, ""), 10) ||
+          0;
+
+        let totalNominal = 0;
+        let txCount = 0;
+        transaksi.forEach((t) => {
+          const tDate = new Date(t.Tanggal);
+          if (!isInSelectedPeriod(tDate)) return;
+          if (String(t["Pos Anggaran"] || "").trim() !== categoryName) return;
+          const tipe = String(t.Tipe || "").toLowerCase();
+          if (categoryType === "pengeluaran" && tipe !== "pengeluaran") return;
+          if (categoryType === "pemasukan" && tipe !== "pemasukan") return;
+          const n =
+            parseInt(String(t.Nominal || "").replace(/[^0-9]/g, ""), 10) || 0;
+          totalNominal += n;
+          txCount += 1;
+        });
+
+        let score = 75;
+        if (categoryType === "pengeluaran") {
+          if (txCount === 0) {
+            score = 92;
+          } else if (budgetLimit > 0) {
+            const usageRatio = totalNominal / budgetLimit;
+            if (usageRatio <= 0.7) {
+              score = 95 - Math.round((usageRatio / 0.7) * 18);
+            } else if (usageRatio <= 1) {
+              score = 77 - Math.round(((usageRatio - 0.7) / 0.3) * 30);
+            } else {
+              score = 47 - Math.round(Math.min((usageRatio - 1) * 55, 40));
+            }
+            score -= Math.min(txCount, 12);
+          } else {
+            score = 70 - Math.min(txCount, 10);
+          }
+        } else {
+          if (txCount === 0) {
+            score = 55;
+          } else if (budgetLimit > 0) {
+            const achievement = totalNominal / budgetLimit;
+            score = Math.round(Math.min(100, achievement * 100));
+            score += Math.min(txCount, 6);
+          } else {
+            score = 70 + Math.min(txCount, 15);
+          }
+        }
+        score = Math.max(0, Math.min(100, score));
+
+        const usagePercent =
+          budgetLimit > 0
+            ? Math.round((totalNominal / budgetLimit) * 100)
+            : null;
+
+        const fallbackInsight = {
+          summary:
+            categoryType === "pengeluaran"
+              ? `Skor kategori ${categoryName} adalah ${score}/100. Pengeluaran periode ini Rp ${totalNominal.toLocaleString("id-ID")}${budgetLimit > 0 ? ` dari batas Rp ${budgetLimit.toLocaleString("id-ID")}` : ""}.`
+              : `Skor kategori ${categoryName} adalah ${score}/100. Pemasukan periode ini Rp ${totalNominal.toLocaleString("id-ID")}${budgetLimit > 0 ? ` dari target Rp ${budgetLimit.toLocaleString("id-ID")}` : ""}.`,
+          reasons:
+            categoryType === "pengeluaran"
+              ? [
+                  budgetLimit > 0
+                    ? `Realisasi saat ini ${usagePercent}% dari batas kategori.`
+                    : "Kategori ini belum memiliki batas, sehingga kontrol pengeluaran lebih sulit.",
+                  txCount > 0
+                    ? `Terdapat ${txCount} transaksi pada periode ini.`
+                    : "Belum ada transaksi pada periode ini.",
+                ]
+              : [
+                  budgetLimit > 0
+                    ? `Capaian pemasukan saat ini ${usagePercent}% dari target.`
+                    : "Kategori ini belum memiliki target pemasukan.",
+                  txCount > 0
+                    ? `Terdapat ${txCount} transaksi pemasukan pada periode ini.`
+                    : "Belum ada pemasukan tercatat pada periode ini.",
+                ],
+          tips:
+            categoryType === "pengeluaran"
+              ? [
+                  "Bagi batas kategori menjadi limit mingguan agar lebih mudah dipantau.",
+                  "Review 3 transaksi terbesar dan cari alternatif yang lebih hemat.",
+                ]
+              : [
+                  "Buat target mingguan kecil agar progres pemasukan lebih konsisten.",
+                  "Catat sumber pemasukan berulang untuk melihat pola yang bisa ditingkatkan.",
+                ],
+        };
+
+        const persistWeeklyHistory = (payload, source) => {
+          if (period !== "mingguan") return;
+          ensureSheetHeaders("AI_Insight_History", [
+            "ID",
+            "FamilyId",
+            "CategoryName",
+            "CategoryType",
+            "Period",
+            "WeekStart",
+            "WeekEnd",
+            "Score",
+            "Summary",
+            "ReasonsJson",
+            "TipsJson",
+            "Source",
+            "CreatedAt",
+            "UpdatedAt",
+          ]);
+
+          const ss = getSpreadsheet();
+          const hSheet = ss.getSheetByName("AI_Insight_History");
+          const rows = hSheet.getDataRange().getValues();
+          const weekStartKey = Utilities.formatDate(
+            rollingWeekStart,
+            "Asia/Jakarta",
+            "yyyy-MM-dd",
+          );
+          const weekEndKey = Utilities.formatDate(
+            todayEnd,
+            "Asia/Jakarta",
+            "yyyy-MM-dd",
+          );
+          const nowIso = new Date().toISOString();
+          const rowIndex = getInsightHistoryRowIndex(
+            rows,
+            familyId,
+            categoryName,
+            categoryType,
+            "mingguan",
+            weekStartKey,
+          );
+
+          if (rowIndex === -1) {
+            hSheet.appendRow([
+              generateId(),
+              familyId,
+              categoryName,
+              categoryType,
+              "mingguan",
+              weekStartKey,
+              weekEndKey,
+              score,
+              String(payload.summary || ""),
+              JSON.stringify(payload.reasons || []),
+              JSON.stringify(payload.tips || []),
+              source,
+              nowIso,
+              nowIso,
+            ]);
+          } else {
+            hSheet.getRange(rowIndex, 8).setValue(score);
+            hSheet
+              .getRange(rowIndex, 9)
+              .setValue(String(payload.summary || ""));
+            hSheet
+              .getRange(rowIndex, 10)
+              .setValue(JSON.stringify(payload.reasons || []));
+            hSheet
+              .getRange(rowIndex, 11)
+              .setValue(JSON.stringify(payload.tips || []));
+            hSheet.getRange(rowIndex, 12).setValue(source);
+            hSheet.getRange(rowIndex, 14).setValue(nowIso);
+          }
+        };
+
+        const apiKey =
+          PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
+
+        if (!apiKey) {
+          output.data = {
+            categoryName,
+            categoryType,
+            period,
+            periodLabel,
+            score,
+            totalNominal,
+            txCount,
+            budgetLimit,
+            usagePercent,
+            summary: fallbackInsight.summary,
+            reasons: fallbackInsight.reasons,
+            tips: fallbackInsight.tips,
+            source: "RULE_BASED",
+          };
+          persistWeeklyHistory(fallbackInsight, "RULE_BASED");
+        } else {
+          const prompt =
+            `Kamu adalah analis keuangan keluarga. Buat insight kategori spesifik dalam format JSON valid saja.\n` +
+            `Data: kategori=${categoryName}, tipe=${categoryType}, periode=${periodLabel}, total=${totalNominal}, jumlahTransaksi=${txCount}, batas=${budgetLimit}, persentase=${usagePercent === null ? "-" : usagePercent + "%"}, skorDasar=${score}.\n` +
+            `Keluaran HARUS JSON valid tanpa markdown dengan schema:\n` +
+            `{\"summary\":\"...\",\"reasons\":[\"...\",\"...\"],\"tips\":[\"...\",\"...\"]}\n` +
+            `Aturan: bahasa Indonesia, singkat, praktis, relevan kategori ini.`;
+
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+          const resp = UrlFetchApp.fetch(url, {
+            method: "post",
+            contentType: "application/json",
+            muteHttpExceptions: true,
+            payload: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+            }),
+          });
+          const json = parseJSONSafe(resp.getContentText(), {});
+
+          if (resp.getResponseCode() === 200 && json.candidates?.length > 0) {
+            const modelText =
+              json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            const cleaned = String(modelText)
+              .trim()
+              .replace(/^```json\s*/i, "")
+              .replace(/^```\s*/i, "")
+              .replace(/\s*```$/, "")
+              .trim();
+            const parsed = parseJSONSafe(cleaned, {});
+            const merged = {
+              summary: String(parsed.summary || fallbackInsight.summary),
+              reasons:
+                Array.isArray(parsed.reasons) && parsed.reasons.length > 0
+                  ? parsed.reasons.slice(0, 3).map((x) => String(x))
+                  : fallbackInsight.reasons,
+              tips:
+                Array.isArray(parsed.tips) && parsed.tips.length > 0
+                  ? parsed.tips.slice(0, 3).map((x) => String(x))
+                  : fallbackInsight.tips,
+            };
+
+            output.data = {
+              categoryName,
+              categoryType,
+              period,
+              periodLabel,
+              score,
+              totalNominal,
+              txCount,
+              budgetLimit,
+              usagePercent,
+              summary: merged.summary,
+              reasons: merged.reasons,
+              tips: merged.tips,
+              source: "GEMINI",
+            };
+            persistWeeklyHistory(merged, "GEMINI");
+          } else {
+            output.data = {
+              categoryName,
+              categoryType,
+              period,
+              periodLabel,
+              score,
+              totalNominal,
+              txCount,
+              budgetLimit,
+              usagePercent,
+              summary: fallbackInsight.summary,
+              reasons: fallbackInsight.reasons,
+              tips: fallbackInsight.tips,
+              source: "RULE_BASED",
+            };
+            persistWeeklyHistory(fallbackInsight, "RULE_BASED");
+          }
+        }
+      }
+    } else if (action === "getAICategoryWeeklyHistory") {
+      const familyId = String(e.parameter.familyId || "");
+      const categoryName = String(e.parameter.categoryName || "").trim();
+      const weeksRaw = parseInt(String(e.parameter.weeks || "8"), 10);
+      const weeks = Number.isFinite(weeksRaw)
+        ? Math.min(Math.max(weeksRaw, 1), 52)
+        : 8;
+
+      if (!familyId) {
+        output.status = "error";
+        output.message = "familyId required";
+      } else {
+        ensureSheetHeaders("AI_Insight_History", [
+          "ID",
+          "FamilyId",
+          "CategoryName",
+          "CategoryType",
+          "Period",
+          "WeekStart",
+          "WeekEnd",
+          "Score",
+          "Summary",
+          "ReasonsJson",
+          "TipsJson",
+          "Source",
+          "CreatedAt",
+          "UpdatedAt",
+        ]);
+
+        const ss = getSpreadsheet();
+        const hSheet = ss.getSheetByName("AI_Insight_History");
+        const rows = hSheet ? hSheet.getDataRange().getValues() : [];
+
+        const items = rows
+          .slice(1)
+          .filter((r) => {
+            if (String(r[1] || "") !== familyId) return false;
+            if (String(r[4] || "") !== "mingguan") return false;
+            if (categoryName && String(r[2] || "") !== categoryName)
+              return false;
+            return true;
+          })
+          .map((r) => ({
+            id: r[0],
+            familyId: r[1],
+            categoryName: r[2],
+            categoryType: r[3],
+            period: r[4],
+            weekStart: r[5],
+            weekEnd: r[6],
+            score: Number(r[7] || 0),
+            summary: String(r[8] || ""),
+            reasons: parseJSONSafe(r[9], []),
+            tips: parseJSONSafe(r[10], []),
+            source: String(r[11] || "RULE_BASED"),
+            createdAt: r[12] || null,
+            updatedAt: r[13] || null,
+          }))
+          .sort((a, b) => {
+            const ta = new Date(a.updatedAt || a.weekEnd || 0).getTime();
+            const tb = new Date(b.updatedAt || b.weekEnd || 0).getTime();
+            return tb - ta;
+          });
+
+        const limited = items.slice(0, weeks * 20);
+        const latestByCategory = {};
+        limited.forEach((item) => {
+          if (!latestByCategory[item.categoryName]) {
+            latestByCategory[item.categoryName] = {
+              score: item.score,
+              source: item.source,
+              updatedAt: item.updatedAt,
+              weekStart: item.weekStart,
+              weekEnd: item.weekEnd,
+            };
+          }
+        });
+
+        output.data = {
+          items: limited,
+          latestByCategory,
+        };
+      }
     } else {
       throw new Error("Invalid action");
     }
@@ -1540,7 +1992,7 @@ function sendDailyReminderEmails() {
   const uData = uSheet.getDataRange().getValues();
 
   const nowJkt = new Date(
-    new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
   );
   const currentHour = nowJkt.getHours();
   const currentMin = nowJkt.getMinutes();
@@ -1611,7 +2063,8 @@ function sendWeeklyReportEmails() {
     const familyName = fRow ? fRow[1] : "Keluarga";
 
     const transaksi = getFilteredData("Transaksi", familyId, 6);
-    let masuk = 0, keluar = 0;
+    let masuk = 0,
+      keluar = 0;
     const perPos = {};
     let totalTx = 0;
     transaksi.forEach((t) => {
@@ -1634,7 +2087,7 @@ function sendWeeklyReportEmails() {
       .sort((a, b) => b[1] - a[1])
       .map(
         ([k, v]) =>
-          `<tr><td style="padding:6px 12px;color:#374151;">${k}</td><td style="padding:6px 12px;text-align:right;color:#374151;">${fmt(v)}</td></tr>`
+          `<tr><td style="padding:6px 12px;color:#374151;">${k}</td><td style="padding:6px 12px;text-align:right;color:#374151;">${fmt(v)}</td></tr>`,
       )
       .join("");
 

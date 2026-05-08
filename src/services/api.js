@@ -428,3 +428,72 @@ export async function fetchAIInsights(
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Meminta insight AI untuk kategori anggaran tertentu
+ */
+export async function fetchAICategoryInsight(
+  familyId,
+  categoryName,
+  categoryType = "pengeluaran",
+  period = "bulanan",
+) {
+  try {
+    const payload = {
+      familyId: familyId || "",
+      categoryName: categoryName || "",
+      categoryType: categoryType || "pengeluaran",
+      period: period || "bulanan",
+    };
+    const response = await fetch(
+      `${GAS_WEB_APP_URL}?action=getAICategoryInsight`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+      },
+    );
+    const result = await response.json();
+    if (result.status === "success")
+      return { success: true, data: result.data || null };
+    if (result.message === "API_KEY_MISSING")
+      return { success: false, error: "API_KEY_MISSING" };
+    throw new Error(result.message || "UNKNOWN_ERROR");
+  } catch (error) {
+    console.error("Error fetching AI category insight:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Mengambil histori insight mingguan kategori dan skor terbaru per kategori
+ */
+export async function fetchAICategoryWeeklyHistory(
+  familyId,
+  { categoryName = "", weeks = 8 } = {},
+) {
+  try {
+    const params = new URLSearchParams({
+      action: "getAICategoryWeeklyHistory",
+      familyId: String(familyId || ""),
+      weeks: String(weeks || 8),
+    });
+    if (categoryName) params.set("categoryName", String(categoryName));
+
+    const response = await fetch(`${GAS_WEB_APP_URL}?${params.toString()}`);
+    const result = await response.json();
+    if (result.status === "success") {
+      return {
+        success: true,
+        data: {
+          items: result.data?.items || [],
+          latestByCategory: result.data?.latestByCategory || {},
+        },
+      };
+    }
+    throw new Error(result.message || "UNKNOWN_ERROR");
+  } catch (error) {
+    console.error("Error fetching AI category weekly history:", error);
+    return { success: false, error: error.message };
+  }
+}
