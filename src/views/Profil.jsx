@@ -81,7 +81,7 @@ export default function Profil() {
         </div>
         <h2 className={`text-xl font-bold ${textPrimary}`}>{nama}</h2>
         <p className={`text-sm font-medium ${textSecondary} mt-0.5`}>{email}</p>
-        <div className="flex items-center gap-1 mt-2 bg-green-50 text-green-600 px-3 py-1 rounded-full">
+        <div className={`flex items-center gap-1 mt-2 px-3 py-1 rounded-full ${isDark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-600'}`}>
           <Shield className="w-3 h-3" />
           <span className="text-[11px] font-bold">Terverifikasi</span>
         </div>
@@ -123,7 +123,7 @@ export default function Profil() {
             className={`w-full flex items-center justify-between p-4 ${rowBorder} ${rowHover}`}
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
                 <User className="w-5 h-5" />
               </div>
               <div className="text-left">
@@ -209,10 +209,10 @@ export default function Profil() {
 
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className={`w-full flex items-center justify-between p-4 hover:bg-red-50 active:bg-red-100 transition group`}
+            className={`w-full flex items-center justify-between p-4 hover:${isDark ? 'bg-red-950/60' : 'bg-red-50'} active:${isDark ? 'bg-red-950' : 'bg-red-100'} transition group`}
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-red-50 group-hover:bg-red-100 flex items-center justify-center text-red-500 transition">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-red-500 transition ${isDark ? 'bg-red-950/50 group-hover:bg-red-950' : 'bg-red-50 group-hover:bg-red-100'}`}>
                 <LogOut className="w-5 h-5" />
               </div>
               <span className="font-bold text-sm text-red-500">

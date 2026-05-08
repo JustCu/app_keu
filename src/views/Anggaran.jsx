@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import TambahAnggaran from "../components/overlays/TambahAnggaran";
 import AnalisisKategori from "../components/overlays/AnalisisKategori";
-import { Edit2, Sparkles } from "lucide-react"; // Import edit icon
+import { Edit2, Sparkles } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { fetchAICategoryWeeklyHistory } from "../services/api";
 
 const formatRupiah = (angka) => new Intl.NumberFormat("id-ID").format(angka);
@@ -14,6 +15,7 @@ export default function Anggaran({
   onRefresh,
 }) {
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAnalisaOpen, setIsAnalisaOpen] = useState(false);
   const [selectedAnggaran, setSelectedAnggaran] = useState(null);
@@ -188,7 +190,7 @@ export default function Anggaran({
 
   if (isLoading) {
     return (
-      <p className="text-center mt-10 text-gray-500">Memuat anggaran...</p>
+      <p className={`text-center mt-10 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Memuat anggaran...</p>
     );
   }
 
@@ -216,11 +218,11 @@ export default function Anggaran({
 
   const getScoreBadgeClass = (score) => {
     if (typeof score !== "number") {
-      return "bg-gray-100 text-gray-500 border-gray-200";
+      return isDark ? "bg-gray-700 text-gray-400 border-gray-600" : "bg-gray-100 text-gray-500 border-gray-200";
     }
-    if (score >= 80) return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    if (score >= 60) return "bg-amber-50 text-amber-700 border-amber-200";
-    return "bg-rose-50 text-rose-700 border-rose-200";
+    if (score >= 80) return isDark ? "bg-emerald-900/40 text-emerald-400 border-emerald-700" : "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (score >= 60) return isDark ? "bg-amber-900/40 text-amber-400 border-amber-700" : "bg-amber-50 text-amber-700 border-amber-200";
+    return isDark ? "bg-rose-900/40 text-rose-400 border-rose-700" : "bg-rose-50 text-rose-700 border-rose-200";
   };
 
   const getCategoryScore = (categoryName) => {
@@ -262,7 +264,7 @@ export default function Anggaran({
       {/* Daftar Anggaran & Target Pemasukan */}
       <section className="px-4 mt-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-base font-bold text-gray-900">Pos Kategori</h2>
+          <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Pos Kategori</h2>
           <button
             onClick={() => {
               setSelectedAnggaran(null);
@@ -288,20 +290,20 @@ export default function Anggaran({
         </div>
 
         {/* Tab Control */}
-        <div className="bg-gray-100 p-1 rounded-xl flex gap-1 relative mb-4">
+        <div className={`p-1 rounded-xl flex gap-1 relative mb-4 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
           <div
-            className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-transform duration-300 ease-in-out ${activeTab === "pemasukan" ? "translate-x-full" : "translate-x-0"}`}
+            className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-lg shadow-sm transition-transform duration-300 ease-in-out ${isDark ? 'bg-gray-700' : 'bg-white'} ${activeTab === "pemasukan" ? "translate-x-full" : "translate-x-0"}`}
           ></div>
 
           <button
             onClick={() => setActiveTab("pengeluaran")}
-            className={`relative z-10 flex-1 text-sm py-2 transition-colors ${activeTab === "pengeluaran" ? "font-bold text-red-600" : "font-medium text-gray-500"}`}
+            className={`relative z-10 flex-1 text-sm py-2 transition-colors ${activeTab === "pengeluaran" ? "font-bold text-red-500" : `font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}`}
           >
             Pengeluaran
           </button>
           <button
             onClick={() => setActiveTab("pemasukan")}
-            className={`relative z-10 flex-1 text-sm py-2 transition-colors ${activeTab === "pemasukan" ? "font-bold text-green-600" : "font-medium text-gray-500"}`}
+            className={`relative z-10 flex-1 text-sm py-2 transition-colors ${activeTab === "pemasukan" ? "font-bold text-green-500" : `font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}`}
           >
             Pemasukan
           </button>
@@ -312,20 +314,20 @@ export default function Anggaran({
             rincianPengeluaran.map((pos, i) => (
               <div
                 key={i}
-                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"
+                className={`p-4 rounded-2xl shadow-sm border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border ${pos.color.iconBg} ${pos.color.iconBorder}`}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border ${isDark ? 'bg-gray-700 border-gray-600' : `${pos.color.iconBg} ${pos.color.iconBorder}`}`}
                     >
                       {pos.ikon}
                     </div>
                     <div>
-                      <p className="font-bold text-[15px] text-gray-900 leading-tight">
+                      <p className={`font-bold text-[15px] leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {pos.nama}
                       </p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-1">
+                      <p className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                         Sisa Saldo
                       </p>
                     </div>
@@ -342,14 +344,14 @@ export default function Anggaran({
                     </span>
                     <button
                       onClick={() => handleOpenAnalisa(pos)}
-                      className="p-1.5 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                      className={`p-1.5 rounded-lg transition ${isDark ? 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/40' : 'text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50'}`}
                       title="Analisa AI"
                     >
                       <Sparkles className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleEdit(pos)}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                      className={`p-1.5 rounded-lg transition ${isDark ? 'text-gray-500 hover:text-blue-400 hover:bg-blue-900/30' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
                       title="Edit kategori"
                     >
                       <Edit2 className="w-4 h-4" />
@@ -358,13 +360,13 @@ export default function Anggaran({
                 </div>
 
                 <p
-                  className={`font-bold text-[26px] leading-none mb-4 ${pos.percentage > 90 ? "text-red-600" : pos.color.text}`}
+                  className={`font-bold text-[26px] leading-none mb-4 ${pos.percentage > 90 ? "text-red-500" : pos.color.text}`}
                 >
                   Rp {formatRupiah(pos.sisa)}
                 </p>
 
                 <div
-                  className={`w-full h-2.5 rounded-full overflow-hidden ${pos.color.bar}`}
+                  className={`w-full h-2.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-700' : pos.color.bar}`}
                 >
                   <div
                     className={`h-full rounded-full ${pos.percentage > 90 ? "bg-red-500" : pos.color.bg}`}
@@ -373,11 +375,11 @@ export default function Anggaran({
                 </div>
                 <div className="flex justify-between items-center mt-2">
                   <p
-                    className={`text-xs font-medium ${pos.percentage > 90 ? "text-red-500" : "text-gray-500"}`}
+                    className={`text-xs font-medium ${pos.percentage > 90 ? "text-red-500" : (isDark ? 'text-gray-400' : 'text-gray-500')}`}
                   >
                     Terpakai Rp {formatRupiah(pos.terpakai)}
                   </p>
-                  <p className="text-xs text-gray-400 font-medium">
+                  <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                     Anggaran Rp {formatRupiah(pos.batas)}
                   </p>
                 </div>
@@ -387,20 +389,20 @@ export default function Anggaran({
             rincianPemasukan.map((pos, i) => (
               <div
                 key={i}
-                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"
+                className={`p-4 rounded-2xl shadow-sm border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border ${pos.color.iconBg} ${pos.color.iconBorder}`}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border ${isDark ? 'bg-gray-700 border-gray-600' : `${pos.color.iconBg} ${pos.color.iconBorder}`}`}
                     >
                       {pos.ikon}
                     </div>
                     <div>
-                      <p className="font-bold text-[15px] text-gray-900 leading-tight">
+                      <p className={`font-bold text-[15px] leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {pos.nama}
                       </p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-1">
+                      <p className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                         {pos.batas > 0 ? "Terkumpul" : "Total Pemasukan"}
                       </p>
                     </div>
@@ -417,14 +419,14 @@ export default function Anggaran({
                     </span>
                     <button
                       onClick={() => handleOpenAnalisa(pos)}
-                      className="p-1.5 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                      className={`p-1.5 rounded-lg transition ${isDark ? 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/40' : 'text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50'}`}
                       title="Analisa AI"
                     >
                       <Sparkles className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleEdit(pos)}
-                      className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
+                      className={`p-1.5 rounded-lg transition ${isDark ? 'text-gray-500 hover:text-green-400 hover:bg-green-900/30' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}
                       title="Edit kategori"
                     >
                       <Edit2 className="w-4 h-4" />
@@ -432,27 +434,25 @@ export default function Anggaran({
                   </div>
                 </div>
 
-                <p
-                  className={`font-bold text-[26px] leading-none mb-4 text-green-600`}
-                >
+                <p className="font-bold text-[26px] leading-none mb-4 text-green-500">
                   Rp {formatRupiah(pos.terpakai)}
                 </p>
 
                 {pos.batas > 0 && (
                   <>
                     <div
-                      className={`w-full h-2.5 rounded-full overflow-hidden ${pos.color.bar}`}
+                      className={`w-full h-2.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-700' : pos.color.bar}`}
                     >
                       <div
-                        className={`h-full rounded-full bg-green-500`}
+                        className="h-full rounded-full bg-green-500"
                         style={{ width: `${pos.percentage}%` }}
                       ></div>
                     </div>
                     <div className="flex justify-between items-center mt-2">
-                      <p className={`text-xs font-medium text-green-600`}>
+                      <p className="text-xs font-medium text-green-500">
                         {pos.percentage}% Tercapai
                       </p>
-                      <p className="text-xs text-gray-400 font-medium">
+                      <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                         Target Rp {formatRupiah(pos.batas)}
                       </p>
                     </div>
@@ -461,7 +461,7 @@ export default function Anggaran({
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-400 text-sm py-4">
+            <p className={`text-center text-sm py-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
               Belum ada Kategori Pemasukan.
             </p>
           )}

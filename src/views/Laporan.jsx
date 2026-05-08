@@ -3,6 +3,7 @@ import { Sparkles } from "lucide-react";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { fetchAIInsights } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -69,6 +70,7 @@ export default function Laporan({
   isLoading = false,
 }) {
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const [filter, setFilter] = useState("semua");
 
   const [aiEnabled, setAiEnabled] = useState(true);
@@ -319,11 +321,13 @@ export default function Laporan({
         data: pengeluaranPerPos.map((p) => p[1]),
         backgroundColor: donutColors.slice(0, pengeluaranPerPos.length),
         borderWidth: 3,
-        borderColor: "#ffffff",
+        borderColor: isDark ? "#111827" : "#ffffff",
         hoverOffset: 4,
       },
     ],
   };
+
+  const labelColor = isDark ? "#9ca3af" : "#374151";
 
   const barOptions = {
     responsive: true,
@@ -331,12 +335,12 @@ export default function Laporan({
     plugins: {
       legend: {
         position: "bottom",
-        labels: { usePointStyle: true, boxWidth: 8, padding: 20 },
+        labels: { usePointStyle: true, boxWidth: 8, padding: 20, color: labelColor },
       },
     },
     scales: {
       y: { display: false, beginAtZero: true },
-      x: { grid: { display: false } },
+      x: { grid: { display: false }, ticks: { color: labelColor } },
     },
   };
 
@@ -350,7 +354,7 @@ export default function Laporan({
   return (
     <div>
       <div className="px-4 mt-4">
-        <div className="bg-gray-200/60 p-1 rounded-xl flex gap-1 overflow-x-auto no-scrollbar">
+        <div className={`p-1 rounded-xl flex gap-1 overflow-x-auto no-scrollbar ${isDark ? "bg-gray-800" : "bg-gray-200/60"}`}>
           {["Hari Ini", "Mingguan", "Bulanan", "Semua"].map((f) => {
             const key = f.toLowerCase().replace(" ", "");
             const isSelected =
@@ -359,7 +363,7 @@ export default function Laporan({
               <button
                 key={f}
                 onClick={() => setFilter(key)}
-                className={`filter-btn flex-1 min-w-[70px] text-sm py-2 transition-all ${isSelected ? "font-bold bg-white rounded-lg shadow-sm text-gray-900" : "font-medium text-gray-500 hover:text-gray-900"}`}
+                className={`filter-btn flex-1 min-w-[70px] text-sm py-2 transition-all ${isSelected ? `font-bold rounded-lg shadow-sm ${isDark ? "bg-gray-700 text-white" : "bg-white text-gray-900"}` : `font-medium ${isDark ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-900"}`}`}
               >
                 {f}
               </button>
@@ -369,24 +373,24 @@ export default function Laporan({
       </div>
 
       <section className="px-4 mt-6">
-        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
+        <h2 className={`text-sm font-bold uppercase tracking-wider mb-3 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
           {periodTitle}
         </h2>
         <div className="flex gap-4">
           <div className="flex-1">
-            <p className="text-xs text-gray-500 font-medium mb-1">
+            <p className={`text-xs font-medium mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
               Total Pemasukan
             </p>
-            <p className="text-lg font-bold text-green-600">
+            <p className="text-lg font-bold text-green-500">
               Rp {formatRupiah(totalMasuk)}
             </p>
           </div>
-          <div className="w-[1px] bg-gray-200"></div>
+          <div className={`w-[1px] ${isDark ? "bg-gray-700" : "bg-gray-200"}`}></div>
           <div className="flex-1">
-            <p className="text-xs text-gray-500 font-medium mb-1">
+            <p className={`text-xs font-medium mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
               Total Pengeluaran
             </p>
-            <p className="text-lg font-bold text-red-600">
+            <p className="text-lg font-bold text-red-500">
               Rp {formatRupiah(totalKeluar)}
             </p>
           </div>
@@ -394,7 +398,7 @@ export default function Laporan({
       </section>
 
       <section className="px-4 mt-6">
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+        <div className={`p-4 rounded-2xl shadow-sm border relative overflow-hidden ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
           <div className="relative w-full h-56">
             <Bar data={barChartData} options={barOptions} />
           </div>
@@ -402,19 +406,19 @@ export default function Laporan({
       </section>
 
       <section className="px-4 mt-8">
-        <h2 className="text-base font-bold text-gray-900 mb-4">
+        <h2 className={`text-base font-bold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}>
           Pengeluaran per Pos Anggaran
         </h2>
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-5 flex flex-col">
+        <div className={`p-4 rounded-2xl shadow-sm border mb-5 flex flex-col ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
           {pengeluaranPerPos.length > 0 ? (
             <>
               <div className="relative w-full h-48 flex justify-center items-center mb-6">
                 <Doughnut data={donutChartData} options={donutOptions} />
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">
+                  <p className={`text-[10px] font-bold uppercase tracking-widest mt-2 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                     Total
                   </p>
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
                     Rp {formatRupiahPendek(totalKeluar)}
                   </p>
                 </div>
@@ -432,21 +436,21 @@ export default function Laporan({
                             className="w-3 h-3 rounded-full shadow-sm"
                             style={{ backgroundColor: color }}
                           ></span>
-                          <p className="text-sm font-medium text-gray-700">
+                          <p className={`text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"}`}>
                             {pos}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-gray-900">
+                          <p className={`text-sm font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
                             Rp {formatRupiahPendek(amount)}
                           </p>
-                          <p className="text-[10px] font-bold text-gray-400">
+                          <p className={`text-[10px] font-bold ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                             {percentage}%
                           </p>
                         </div>
                       </div>
                       {idx < pengeluaranPerPos.length - 1 && (
-                        <hr className="border-gray-50 mt-3" />
+                        <hr className={`mt-3 ${isDark ? "border-gray-700" : "border-gray-50"}`} />
                       )}
                     </div>
                   );
@@ -454,7 +458,7 @@ export default function Laporan({
               </div>
             </>
           ) : (
-            <p className="text-center text-sm text-gray-500 py-6">
+            <p className={`text-center text-sm py-6 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
               Belum ada data pengeluaran.
             </p>
           )}
@@ -463,22 +467,22 @@ export default function Laporan({
 
       {aiEnabled && (
         <section className="px-4 mt-8 pb-6">
-          <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 rounded-2xl p-5 border border-purple-100 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-purple-200 rounded-full blur-3xl opacity-50 -mr-10 -mt-10 pointer-events-none"></div>
+          <div className={`rounded-2xl p-5 border shadow-sm relative overflow-hidden ${isDark ? "bg-gradient-to-r from-purple-900/40 to-fuchsia-900/30 border-purple-800" : "bg-gradient-to-r from-purple-50 to-fuchsia-50 border-purple-100"}`}>
+            <div className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-50 -mr-10 -mt-10 pointer-events-none ${isDark ? "bg-purple-700" : "bg-purple-200"}`}></div>
 
             <div className="flex items-center justify-between mb-3 relative z-10">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? "bg-purple-900/60 text-purple-400" : "bg-purple-100 text-purple-600"}`}>
                   <Sparkles className="w-4 h-4" />
                 </div>
-                <h3 className="font-bold text-sm text-purple-900">
+                <h3 className={`font-bold text-sm ${isDark ? "text-purple-300" : "text-purple-900"}`}>
                   Insight AI • {periodTitle}
                 </h3>
               </div>
               {!aiLoading && (
                 <button
                   onClick={() => loadInsights(true)}
-                  className="text-xs font-bold text-purple-600 hover:text-purple-800 transition bg-purple-100 px-3 py-1.5 rounded-lg active:scale-95"
+                  className={`text-xs font-bold transition px-3 py-1.5 rounded-lg active:scale-95 ${isDark ? "text-purple-300 bg-purple-900/50 hover:bg-purple-800/60" : "text-purple-600 bg-purple-100 hover:text-purple-800"}`}
                 >
                   Perbarui
                 </button>
@@ -493,13 +497,13 @@ export default function Laporan({
                   <div className="h-3 bg-purple-200/50 rounded-full w-4/6"></div>
                 </div>
               ) : aiError ? (
-                <p className="text-sm text-red-500 font-medium">{aiError}</p>
+                <p className="text-sm text-red-400 font-medium">{aiError}</p>
               ) : aiData ? (
-                <p className="text-sm text-purple-800 leading-relaxed whitespace-pre-line">
+                <p className={`text-sm leading-relaxed whitespace-pre-line ${isDark ? "text-purple-200" : "text-purple-800"}`}>
                   {aiData}
                 </p>
               ) : (
-                <p className="text-sm text-purple-600/70">
+                <p className={`text-sm ${isDark ? "text-purple-400" : "text-purple-600/70"}`}>
                   Menyiapkan insight untuk periode ini...
                 </p>
               )}

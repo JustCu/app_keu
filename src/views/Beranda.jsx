@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Eye, EyeOff, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Beranda({ transaksi = [], anggaran = [], isLoading = false }) {
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
+  const { isDark } = useTheme();
 
   // Calculate totals
   let totalMasuk = 0;
@@ -101,15 +103,15 @@ export default function Beranda({ transaksi = [], anggaran = [], isLoading = fal
       {/* Recent Transactions List */}
       <section className="px-4 mt-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-base font-bold text-gray-900">Transaksi Terakhir</h2>
-          <button className="text-sm font-medium text-blue-600 hover:text-blue-700 transition active:scale-95">Lihat Semua</button>
+          <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Transaksi Terakhir</h2>
+          <button className="text-sm font-medium text-blue-500 hover:text-blue-400 transition active:scale-95">Lihat Semua</button>
         </div>
         
         <div className="flex flex-col gap-5">
            {isLoading ? (
-             <p className="text-sm text-gray-500 text-center py-4">Memuat data...</p>
+             <p className={`text-sm text-center py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Memuat data...</p>
            ) : transaksi.length === 0 ? (
-             <p className="text-sm text-gray-500 text-center py-4">Belum ada transaksi.</p>
+             <p className={`text-sm text-center py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Belum ada transaksi.</p>
            ) : (
              transaksi.slice(0, 5).map((trx, index) => {
                const isMasuk = trx.Tipe === 'pemasukan';
@@ -119,7 +121,9 @@ export default function Beranda({ transaksi = [], anggaran = [], isLoading = fal
                // Lookup pos anggaran to get icon
                const pos = anggaran.find(a => a.Nama === trx['Pos Anggaran']);
                const icon = pos?.Ikon || (isMasuk ? '💼' : '🛒');
-               const iconBg = isMasuk ? 'bg-green-50 border-green-100' : 'bg-blue-50 border-blue-100';
+               const iconBg = isMasuk
+                 ? (isDark ? 'bg-green-900/40 border-green-800' : 'bg-green-50 border-green-100')
+                 : (isDark ? 'bg-blue-900/40 border-blue-800' : 'bg-blue-50 border-blue-100');
 
                return (
                  <div key={index} className="flex justify-between items-center">
@@ -128,11 +132,11 @@ export default function Beranda({ transaksi = [], anggaran = [], isLoading = fal
                        {icon}
                      </div>
                      <div>
-                       <p className="font-bold text-gray-900 text-sm">{trx.Catatan || trx['Pos Anggaran']}</p>
-                       <p className="text-xs text-gray-500 font-medium mt-0.5">{trx['Pos Anggaran']} • {dateStr}</p>
+                       <p className={`font-bold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{trx.Catatan || trx['Pos Anggaran']}</p>
+                       <p className={`text-xs font-medium mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{trx['Pos Anggaran']} • {dateStr}</p>
                      </div>
                    </div>
-                   <p className={`font-bold text-sm ${isMasuk ? 'text-green-600' : 'text-gray-900'}`}>
+                   <p className={`font-bold text-sm ${isMasuk ? 'text-green-500' : (isDark ? 'text-gray-300' : 'text-gray-900')}`}>
                      {isMasuk ? '+' : '-'} Rp {nominalStr}
                    </p>
                  </div>
