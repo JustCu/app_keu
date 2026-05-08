@@ -213,6 +213,48 @@ export async function apiRollbackFamilyAction({
   }
 }
 
+export async function apiGetNotificationReads({ userId, familyId }) {
+  try {
+    const params = new URLSearchParams({
+      action: "getNotificationReads",
+      userId: String(userId || ""),
+      familyId: String(familyId || ""),
+    });
+    const r = await fetch(`${GAS_WEB_APP_URL}?${params.toString()}`);
+    const res = await r.json();
+    if (res.status === "success") {
+      return {
+        success: true,
+        data: {
+          readMap: res.data?.readMap || {},
+          updatedAt: res.data?.updatedAt || null,
+        },
+      };
+    }
+    return { success: false, error: res.message };
+  } catch {
+    return { success: false, error: "Koneksi gagal." };
+  }
+}
+
+export async function apiUpsertNotificationReads({
+  userId,
+  familyId,
+  readMap,
+}) {
+  try {
+    const r = await post("upsertNotificationReads", {
+      userId,
+      familyId,
+      readMap: readMap || {},
+    });
+    if (r.status === "success") return { success: true, data: r.data || null };
+    return { success: false, error: r.message };
+  } catch {
+    return { success: false, error: "Koneksi gagal." };
+  }
+}
+
 /**
  * Fetch data transaksi dari Google Sheets
  */

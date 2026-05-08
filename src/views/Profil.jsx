@@ -15,6 +15,7 @@ import {
 import Pengaturan from "../components/overlays/Pengaturan";
 import AnggotaKeluarga from "../components/overlays/AnggotaKeluarga";
 import RiwayatAudit from "../components/overlays/RiwayatAudit";
+import TentangAplikasi from "../components/overlays/TentangAplikasi";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
@@ -24,6 +25,7 @@ export default function Profil() {
   const [isPengaturanOpen, setIsPengaturanOpen] = useState(false);
   const [isAnggotaOpen, setIsAnggotaOpen] = useState(false);
   const [isAuditOpen, setIsAuditOpen] = useState(false);
+  const [isTentangOpen, setIsTentangOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editNama, setEditNama] = useState(user?.nama || "");
   const [editEmail, setEditEmail] = useState(user?.email || "");
@@ -187,6 +189,7 @@ export default function Profil() {
           </button>
 
           <button
+            onClick={() => setIsTentangOpen(true)}
             className={`w-full flex items-center justify-between p-4 ${rowBorder} ${rowHover}`}
           >
             <div className="flex items-center gap-3">
@@ -232,6 +235,10 @@ export default function Profil() {
       <RiwayatAudit
         isOpen={isAuditOpen}
         onClose={() => setIsAuditOpen(false)}
+      />
+      <TentangAplikasi
+        isOpen={isTentangOpen}
+        onClose={() => setIsTentangOpen(false)}
       />
 
       {/* Edit Profil Modal */}

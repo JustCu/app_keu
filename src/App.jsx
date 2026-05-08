@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Header from "./components/layout/Header";
 import BottomNav from "./components/layout/BottomNav";
 import Beranda from "./views/Beranda";
@@ -7,10 +7,24 @@ import Anggaran from "./views/Anggaran";
 import Profil from "./views/Profil";
 import TambahTransaksi from "./components/overlays/TambahTransaksi";
 import Notifikasi from "./components/overlays/Notifikasi";
-import { fetchTransaksi, fetchAnggaran } from "./services/api";
+import {
+  fetchTransaksi,
+  fetchAnggaran,
+  apiGetNotificationReads,
+  apiUpsertNotificationReads,
+} from "./services/api";
 import { useTheme } from "./context/ThemeContext";
 import { useAuth } from "./context/AuthContext";
 import { useFamily } from "./context/FamilyContext";
+import {
+  generateNotifications,
+  getNotifStorageKey,
+  loadReadMap,
+  saveReadMap,
+  mergeReadMaps,
+  normalizeReadMap,
+  readMapsEqual,
+} from "./utils/notifications";
 import Login from "./views/Login";
 
 function App() {
@@ -20,6 +34,7 @@ function App() {
   const [anggaran, setAnggaran] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isNotifikasiOpen, setIsNotifikasiOpen] = useState(false);
+  const [notifReadMap, setNotifReadMap] = useState({});
   const { isDark } = useTheme();
   const { isLoggedIn, user } = useAuth();
   const { family, refreshFamily, clearFamilyState } = useFamily();
@@ -51,6 +66,95 @@ function App() {
     }
   }, [isLoggedIn, user?.familyId]);
 
+  const notifications = useMemo(
+    () => generateNotifications(transaksi, anggaran),
+    [transaksi, anggaran],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const key = getNotifStorageKey(user?.id, user?.familyId);
+    const localMap = normalizeReadMap(loadReadMap(key));
+    setNotifReadMap(localMap);
+
+    if (!user?.id || !user?.familyId) return () => {};
+
+    (async () => {
+      const remoteRes = await apiGetNotificationReads({
+        userId: user.id,
+        familyId: user.familyId,
+      });
+      if (cancelled || !remoteRes.success) return;
+
+      const remoteMap = normalizeReadMap(remoteRes.data?.readMap || {});
+      const mergedMap = mergeReadMaps(remoteMap, localMap);
+      setNotifReadMap(mergedMap);
+      saveReadMap(key, mergedMap);
+
+      if (!readMapsEqual(remoteMap, mergedMap)) {
+        apiUpsertNotificationReads({
+          userId: user.id,
+          familyId: user.familyId,
+          readMap: mergedMap,
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.familyId]);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => n.isNew && !notifReadMap[n.id]).length,
+    [notifications, notifReadMap],
+  );
+
+  const markNotifRead = (notifId) => {
+    if (!notifId) return;
+    const storageKey = getNotifStorageKey(user?.id, user?.familyId);
+    setNotifReadMap((prev) => {
+      if (prev[notifId]) return prev;
+      const next = normalizeReadMap({ ...prev, [notifId]: true });
+      saveReadMap(storageKey, next);
+      if (user?.id && user?.familyId) {
+        apiUpsertNotificationReads({
+          userId: user.id,
+          familyId: user.familyId,
+          readMap: next,
+        });
+      }
+      return next;
+    });
+  };
+
+  const markAllNotifRead = () => {
+    if (!notifications.length) return;
+    const storageKey = getNotifStorageKey(user?.id, user?.familyId);
+    const allRead = notifications.reduce((acc, n) => {
+      acc[n.id] = true;
+      return acc;
+    }, {});
+    setNotifReadMap((prev) => {
+      const next = normalizeReadMap({ ...prev, ...allRead });
+      saveReadMap(storageKey, next);
+      if (user?.id && user?.familyId) {
+        apiUpsertNotificationReads({
+          userId: user.id,
+          familyId: user.familyId,
+          readMap: next,
+        });
+      }
+      return next;
+    });
+  };
+
+  const navigateFromNotif = (targetView, notifId) => {
+    if (notifId) markNotifRead(notifId);
+    setIsNotifikasiOpen(false);
+    if (targetView) setCurrentView(targetView);
+  };
+
   return (
     <div
       className={`flex justify-center h-screen overflow-hidden ${isDark ? "bg-gray-950" : "bg-gray-100"}`}
@@ -65,6 +169,7 @@ function App() {
           currentView={currentView}
           familyName={family?.nama}
           onOpenNotifikasi={() => setIsNotifikasiOpen(true)}
+          unreadCount={unreadCount}
         />
 
         <main
@@ -114,8 +219,11 @@ function App() {
         <Notifikasi
           isOpen={isNotifikasiOpen}
           onClose={() => setIsNotifikasiOpen(false)}
-          transaksi={transaksi}
-          anggaran={anggaran}
+          notifications={notifications}
+          readMap={notifReadMap}
+          onMarkRead={markNotifRead}
+          onMarkAllRead={markAllNotifRead}
+          onNavigate={navigateFromNotif}
         />
         <TambahTransaksi
           isOpen={isAddTransactionOpen}

@@ -87,6 +87,22 @@ function getMemberRowIndexByUserId(memberRows, familyId, userId) {
   return -1;
 }
 
+function normalizeReadMap(readMap) {
+  const source = readMap && typeof readMap === "object" ? readMap : {};
+  const normalized = {};
+  Object.keys(source).forEach((k) => {
+    if (source[k]) normalized[k] = true;
+  });
+  return normalized;
+}
+
+function getNotificationReadRowIndex(rows, userId, familyId) {
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][1] === userId && rows[i][2] === familyId) return i + 1;
+  }
+  return -1;
+}
+
 const ROLLBACK_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function ensureSheetHeaders(sheetName, headers, options) {
@@ -183,6 +199,14 @@ function initSheets() {
     "TargetName",
     "Metadata",
     "Timestamp",
+  ]);
+
+  ensureSheetHeaders("Notification_Reads", [
+    "ID",
+    "UserId",
+    "FamilyId",
+    "ReadMap",
+    "UpdatedAt",
   ]);
 }
 
@@ -382,6 +406,86 @@ function handleRequest(e, isPost) {
             totalPages,
           },
         };
+      }
+    } else if (action === "getNotificationReads") {
+      const userId = e.parameter.userId || "";
+      const familyId = e.parameter.familyId || "";
+      if (!userId || !familyId) throw new Error("userId & familyId required");
+
+      const ss = getSpreadsheet();
+      const uSheet = ss.getSheetByName("Users");
+      const uData = uSheet ? uSheet.getDataRange().getValues() : [];
+      const user = getUserById(uData, userId);
+      if (
+        !user ||
+        user.familyId !== familyId ||
+        !isFamilyMember(ss, userId, familyId)
+      ) {
+        output.status = "error";
+        output.message = "FORBIDDEN";
+      } else {
+        ensureSheetHeaders("Notification_Reads", [
+          "ID",
+          "UserId",
+          "FamilyId",
+          "ReadMap",
+          "UpdatedAt",
+        ]);
+        const nSheet = ss.getSheetByName("Notification_Reads");
+        const nData = nSheet ? nSheet.getDataRange().getValues() : [];
+        const row = nData
+          .slice(1)
+          .find((r) => r[1] === userId && r[2] === familyId);
+        output.data = {
+          readMap: row ? normalizeReadMap(parseJSONSafe(row[3], {})) : {},
+          updatedAt: row ? row[4] || null : null,
+        };
+      }
+    } else if (action === "upsertNotificationReads" && isPost) {
+      const p = JSON.parse(e.postData.contents);
+      const userId = p.userId || "";
+      const familyId = p.familyId || "";
+      const readMap = normalizeReadMap(p.readMap || {});
+      if (!userId || !familyId) throw new Error("userId & familyId required");
+
+      const ss = getSpreadsheet();
+      const uSheet = ss.getSheetByName("Users");
+      const uData = uSheet ? uSheet.getDataRange().getValues() : [];
+      const user = getUserById(uData, userId);
+      if (
+        !user ||
+        user.familyId !== familyId ||
+        !isFamilyMember(ss, userId, familyId)
+      ) {
+        output.status = "error";
+        output.message = "FORBIDDEN";
+      } else {
+        ensureSheetHeaders("Notification_Reads", [
+          "ID",
+          "UserId",
+          "FamilyId",
+          "ReadMap",
+          "UpdatedAt",
+        ]);
+        const nSheet = ss.getSheetByName("Notification_Reads");
+        const nData = nSheet.getDataRange().getValues();
+        const rowIndex = getNotificationReadRowIndex(nData, userId, familyId);
+        const updatedAt = new Date().toISOString();
+
+        if (rowIndex === -1) {
+          nSheet.appendRow([
+            generateId(),
+            userId,
+            familyId,
+            JSON.stringify(readMap),
+            updatedAt,
+          ]);
+        } else {
+          nSheet.getRange(rowIndex, 4).setValue(JSON.stringify(readMap));
+          nSheet.getRange(rowIndex, 5).setValue(updatedAt);
+        }
+
+        output.data = { updatedAt };
       }
 
       // === AUTH ===
