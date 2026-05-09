@@ -1,10 +1,161 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+}
+
+:root {
+  --primary: #0d9488;
+  --primary-soft: #ccfbf1;
+  --primary-soft-dark: #134e4a;
+  --primary-strong: #0f766e;
+  --primary-soft-adaptive: var(--primary-soft);
+  --primary-surface-adaptive: #f0fdfa;
+  --primary-surface-strong-adaptive: #ccfbf1;
+  --primary-surface-muted-adaptive: color-mix(
+    in srgb,
+    var(--primary-surface-strong-adaptive) 50%,
+    transparent
+  );
+  --primary-text-adaptive: #0d9488;
+  --primary-text-strong-adaptive: #0f766e;
+  --primary-text-soft-adaptive: #0d9488b3;
+  --primary-text-on-dark: #99f6e4;
+}
+
+html.dark {
+  --primary-soft-adaptive: var(--primary-soft-dark);
+  --primary-surface-adaptive: color-mix(
+    in srgb,
+    var(--primary-soft-dark) 78%,
+    transparent
+  );
+  --primary-surface-strong-adaptive: color-mix(
+    in srgb,
+    var(--primary-soft-dark) 92%,
+    transparent
+  );
+  --primary-surface-muted-adaptive: color-mix(
+    in srgb,
+    var(--primary-soft-dark) 55%,
+    transparent
+  );
+  --primary-text-adaptive: #5eead4;
+  --primary-text-strong-adaptive: #99f6e4;
+  --primary-text-soft-adaptive: #2dd4bf;
 }
 
 @layer utilities {
+  .text-primary-theme {
+    color: var(--primary);
+  }
+
+  .text-primary-adaptive {
+    color: var(--primary-text-adaptive);
+  }
+
+  .text-primary-strong-adaptive {
+    color: var(--primary-text-strong-adaptive);
+  }
+
+  .text-primary-soft-adaptive {
+    color: var(--primary-text-soft-adaptive);
+  }
+
+  .text-primary-on-dark {
+    color: var(--primary-text-on-dark);
+  }
+
+  .bg-primary-theme {
+    background-color: var(--primary);
+  }
+
+  .bg-primary-soft-theme {
+    background-color: var(--primary-soft);
+  }
+
+  .bg-primary-soft-adaptive {
+    background-color: var(--primary-soft-adaptive);
+  }
+
+  .bg-primary-surface-adaptive {
+    background-color: var(--primary-surface-adaptive);
+  }
+
+  .bg-primary-surface-strong-adaptive {
+    background-color: var(--primary-surface-strong-adaptive);
+  }
+
+  .bg-primary-surface-muted-adaptive {
+    background-color: var(--primary-surface-muted-adaptive);
+  }
+
+  .hover\:bg-primary-surface-strong-adaptive:hover {
+    background-color: var(--primary-surface-strong-adaptive);
+  }
+
+  .border-primary-soft-theme {
+    border-color: var(--primary-soft);
+  }
+
+  .border-primary-soft-adaptive {
+    border-color: var(--primary-soft-adaptive);
+  }
+
+  .focus-ring-primary-theme:focus {
+    --tw-ring-color: var(--primary);
+  }
+
+  .focus-primary-theme:focus {
+    --tw-ring-color: var(--primary);
+    border-color: var(--primary);
+  }
+
+  .focus-primary-theme:focus-visible {
+    --tw-ring-color: var(--primary);
+    border-color: var(--primary);
+  }
+
+  .hover\:text-primary-adaptive:hover {
+    color: var(--primary-text-adaptive);
+  }
+
+  .hover\:text-primary-strong-adaptive:hover {
+    color: var(--primary-text-strong-adaptive);
+  }
+
+  .hover\:bg-primary-strong-theme:hover {
+    background-color: var(--primary-strong);
+  }
+
+  .btn-primary-theme {
+    background-color: var(--primary);
+    color: #fff;
+  }
+
+  .link-primary-adaptive {
+    color: var(--primary-text-adaptive);
+  }
+
+  .link-primary-adaptive:hover {
+    color: var(--primary-text-strong-adaptive);
+  }
+
+  .btn-primary-theme:hover {
+    background-color: var(--primary-strong);
+  }
+
+  .btn-primary-theme:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  .shadow-primary-theme {
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 34%, transparent);
+  }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -14,13 +165,17 @@
   }
 
   .card-shine {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
   }
 
   .view-transition {
     transition: opacity 0.3s ease-in-out;
   }
-  
+
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }

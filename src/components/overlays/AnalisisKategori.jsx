@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { X, Sparkles, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import {
   fetchAICategoryInsight,
   fetchAICategoryWeeklyHistory,
@@ -13,20 +14,24 @@ const PERIOD_OPTIONS = [
   { key: "semua", label: "Semua" },
 ];
 
-const getScoreStyle = (score) => {
+const getScoreStyle = (score, isDark) => {
   if (score >= 80)
     return {
-      ring: "ring-emerald-100",
-      text: "text-emerald-600",
-      bg: "bg-emerald-50",
+      ring: isDark ? "ring-emerald-800/60" : "ring-emerald-100",
+      text: isDark ? "text-emerald-300" : "text-emerald-600",
+      bg: isDark ? "bg-emerald-900/30" : "bg-emerald-50",
     };
   if (score >= 60)
     return {
-      ring: "ring-amber-100",
-      text: "text-amber-600",
-      bg: "bg-amber-50",
+      ring: isDark ? "ring-amber-800/60" : "ring-amber-100",
+      text: isDark ? "text-amber-300" : "text-amber-600",
+      bg: isDark ? "bg-amber-900/30" : "bg-amber-50",
     };
-  return { ring: "ring-red-100", text: "text-red-600", bg: "bg-red-50" };
+  return {
+    ring: isDark ? "ring-red-800/60" : "ring-red-100",
+    text: isDark ? "text-red-300" : "text-red-600",
+    bg: isDark ? "bg-red-900/30" : "bg-red-50",
+  };
 };
 
 export default function AnalisisKategori({
@@ -37,6 +42,7 @@ export default function AnalisisKategori({
   onInsightSaved,
 }) {
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const [period, setPeriod] = useState("bulanan");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -136,37 +142,55 @@ export default function AnalisisKategori({
   if (!isOpen) return null;
 
   const score = Number(insight?.score || 0);
-  const scoreStyle = getScoreStyle(score);
+  const scoreStyle = getScoreStyle(score, isDark);
+  const panelClass = isDark
+    ? "bg-gray-800 border-gray-700"
+    : "bg-white border-gray-100";
+  const textPrimary = isDark ? "text-white" : "text-gray-900";
+  const textMuted = isDark ? "text-gray-400" : "text-gray-500";
+  const textSoft = isDark ? "text-gray-500" : "text-gray-400";
 
   return (
-    <div className="absolute inset-0 z-50 bg-white flex flex-col shadow-2xl">
-      <header className="flex items-center justify-between px-4 pt-8 pb-4 border-b border-gray-100 bg-white">
+    <div
+      className={`absolute inset-0 z-50 flex flex-col shadow-2xl ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}
+    >
+      <header
+        className={`flex items-center justify-between px-4 pt-8 pb-4 border-b ${isDark ? "border-gray-800 bg-gray-900" : "border-gray-100 bg-white"}`}
+      >
         <div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+          <p
+            className={`text-xs font-bold uppercase tracking-wider ${textSoft}`}
+          >
             Analisa AI Kategori
           </p>
-          <h2 className="text-lg font-bold text-gray-900 mt-0.5">
+          <h2 className={`text-lg font-bold mt-0.5 ${textPrimary}`}>
             {category?.nama || "Kategori"}
           </h2>
         </div>
         <button
           onClick={onClose}
-          className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200 transition"
+          className={`w-8 h-8 rounded-full flex items-center justify-center transition ${isDark ? "bg-gray-800 text-gray-300 hover:bg-gray-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
         >
           <X className="w-5 h-5" />
         </button>
       </header>
 
       <div className="px-4 pt-4">
-        <div className="bg-gray-100 p-1 rounded-xl flex gap-1 overflow-x-auto no-scrollbar">
+        <div
+          className={`p-1 rounded-xl flex gap-1 overflow-x-auto no-scrollbar ${isDark ? "bg-gray-800" : "bg-gray-100"}`}
+        >
           {PERIOD_OPTIONS.map((p) => (
             <button
               key={p.key}
               onClick={() => setPeriod(p.key)}
               className={`min-w-[78px] px-3 py-2 rounded-lg text-xs font-semibold transition ${
                 period === p.key
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500"
+                  ? isDark
+                    ? "bg-gray-700 text-white shadow-sm"
+                    : "bg-white text-gray-900 shadow-sm"
+                  : isDark
+                    ? "text-gray-400"
+                    : "text-gray-500"
               }`}
             >
               {p.label}
@@ -177,11 +201,17 @@ export default function AnalisisKategori({
 
       <div className="flex-1 overflow-y-auto no-scrollbar p-4 pb-8">
         {!aiEnabled && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-sm font-bold text-amber-700">
+          <div
+            className={`rounded-2xl border p-4 ${isDark ? "border-amber-800 bg-amber-900/30" : "border-amber-200 bg-amber-50"}`}
+          >
+            <p
+              className={`text-sm font-bold ${isDark ? "text-amber-300" : "text-amber-700"}`}
+            >
               Integrasi AI belum aktif
             </p>
-            <p className="text-xs text-amber-700 mt-1">
+            <p
+              className={`text-xs mt-1 ${isDark ? "text-amber-300" : "text-amber-700"}`}
+            >
               Aktifkan fitur Integrasi Gemini AI di menu Pengaturan untuk
               menggunakan analisa kategori.
             </p>
@@ -189,31 +219,43 @@ export default function AnalisisKategori({
         )}
 
         {aiEnabled && loading && (
-          <div className="rounded-2xl border border-gray-100 bg-white p-8 flex flex-col items-center gap-2">
-            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-            <p className="text-sm text-gray-500">
+          <div
+            className={`rounded-2xl border p-8 flex flex-col items-center gap-2 ${panelClass}`}
+          >
+            <Loader2 className="w-5 h-5 text-primary-adaptive animate-spin" />
+            <p className={`text-sm ${textMuted}`}>
               Menganalisa kategori dengan AI...
             </p>
           </div>
         )}
 
         {aiEnabled && !loading && error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-            <p className="text-sm font-semibold text-red-600 flex items-center gap-2">
+          <div
+            className={`rounded-2xl border p-4 ${isDark ? "border-red-800 bg-red-900/30" : "border-red-200 bg-red-50"}`}
+          >
+            <p
+              className={`text-sm font-semibold flex items-center gap-2 ${isDark ? "text-red-300" : "text-red-600"}`}
+            >
               <AlertCircle className="w-4 h-4" /> Terjadi masalah
             </p>
-            <p className="text-xs text-red-600 mt-1">{error}</p>
+            <p
+              className={`text-xs mt-1 ${isDark ? "text-red-300" : "text-red-600"}`}
+            >
+              {error}
+            </p>
           </div>
         )}
 
         {aiEnabled && !loading && !error && insight && (
           <div className="space-y-4">
             <div
-              className={`rounded-2xl p-4 border border-gray-100 ${scoreStyle.bg}`}
+              className={`rounded-2xl p-4 border ${isDark ? "border-gray-700" : "border-gray-100"} ${scoreStyle.bg}`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <p
+                    className={`text-xs font-bold uppercase tracking-wider ${textMuted}`}
+                  >
                     Skor Kesehatan
                   </p>
                   <p className={`text-3xl font-black mt-1 ${scoreStyle.text}`}>
@@ -221,12 +263,14 @@ export default function AnalisisKategori({
                   </p>
                 </div>
                 <div
-                  className={`w-12 h-12 rounded-full bg-white ring-8 ${scoreStyle.ring} flex items-center justify-center`}
+                  className={`w-12 h-12 rounded-full ring-8 ${isDark ? "bg-gray-800" : "bg-white"} ${scoreStyle.ring} flex items-center justify-center`}
                 >
                   <ShieldCheck className={`w-6 h-6 ${scoreStyle.text}`} />
                 </div>
               </div>
-              <p className="text-xs text-gray-600 mt-3">
+              <p
+                className={`text-xs mt-3 ${isDark ? "text-gray-300" : "text-gray-600"}`}
+              >
                 Total{" "}
                 {insight?.categoryType === "pemasukan"
                   ? "pemasukan"
@@ -251,48 +295,56 @@ export default function AnalisisKategori({
               </p>
             </div>
 
-            <div className="rounded-2xl border border-gray-100 p-4 bg-white">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> Ringkasan
-                AI
+            <div className={`rounded-2xl border p-4 ${panelClass}`}>
+              <p
+                className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1 ${textMuted}`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-primary-adaptive" />{" "}
+                Ringkasan AI
               </p>
-              <p className="text-[11px] text-gray-400 mb-2">
+              <p className={`text-[11px] mb-2 ${textSoft}`}>
                 Sumber:{" "}
                 {insight?.source === "GEMINI"
                   ? "Gemini AI"
                   : "Analisa Rule-Based"}
               </p>
-              <p className="text-sm font-medium text-gray-700 leading-relaxed">
+              <p
+                className={`text-sm font-medium leading-relaxed ${isDark ? "text-gray-200" : "text-gray-700"}`}
+              >
                 {insight.summary}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-gray-100 p-4 bg-white">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            <div className={`rounded-2xl border p-4 ${panelClass}`}>
+              <p
+                className={`text-xs font-bold uppercase tracking-wider mb-2 ${textMuted}`}
+              >
                 Alasan Utama
               </p>
               <ul className="space-y-2">
                 {(insight.reasons || []).map((reason, idx) => (
                   <li
                     key={`${reason}-${idx}`}
-                    className="text-sm text-gray-700 flex gap-2"
+                    className={`text-sm flex gap-2 ${isDark ? "text-gray-200" : "text-gray-700"}`}
                   >
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary-theme shrink-0"></span>
                     <span>{reason}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="rounded-2xl border border-gray-100 p-4 bg-white">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            <div className={`rounded-2xl border p-4 ${panelClass}`}>
+              <p
+                className={`text-xs font-bold uppercase tracking-wider mb-2 ${textMuted}`}
+              >
                 Tips Hemat
               </p>
               <ul className="space-y-2">
                 {(insight.tips || []).map((tip, idx) => (
                   <li
                     key={`${tip}-${idx}`}
-                    className="text-sm text-gray-700 flex gap-2"
+                    className={`text-sm flex gap-2 ${isDark ? "text-gray-200" : "text-gray-700"}`}
                   >
                     <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                     <span>{tip}</span>
@@ -301,12 +353,14 @@ export default function AnalisisKategori({
               </ul>
             </div>
 
-            <div className="rounded-2xl border border-gray-100 p-4 bg-white">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            <div className={`rounded-2xl border p-4 ${panelClass}`}>
+              <p
+                className={`text-xs font-bold uppercase tracking-wider mb-2 ${textMuted}`}
+              >
                 Histori Mingguan
               </p>
               {historyItems.length === 0 ? (
-                <p className="text-xs text-gray-500">
+                <p className={`text-xs ${textMuted}`}>
                   Belum ada histori insight mingguan untuk kategori ini.
                 </p>
               ) : (
@@ -314,18 +368,20 @@ export default function AnalisisKategori({
                   {historyItems.map((h) => (
                     <div
                       key={h.id}
-                      className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                      className={`flex items-center justify-between rounded-lg px-3 py-2 ${isDark ? "bg-gray-700" : "bg-gray-50"}`}
                     >
                       <div>
-                        <p className="text-xs font-semibold text-gray-700">
+                        <p
+                          className={`text-xs font-semibold ${isDark ? "text-gray-200" : "text-gray-700"}`}
+                        >
                           {h.weekStart} - {h.weekEnd}
                         </p>
-                        <p className="text-[11px] text-gray-400">
+                        <p className={`text-[11px] ${textSoft}`}>
                           {h.source === "GEMINI" ? "Gemini" : "Rule-Based"}
                         </p>
                       </div>
                       <span
-                        className={`text-xs font-bold px-2 py-1 rounded-md ${getScoreStyle(Number(h.score || 0)).bg} ${getScoreStyle(Number(h.score || 0)).text}`}
+                        className={`text-xs font-bold px-2 py-1 rounded-md ${getScoreStyle(Number(h.score || 0), isDark).bg} ${getScoreStyle(Number(h.score || 0), isDark).text}`}
                       >
                         {Number(h.score || 0)}
                       </span>

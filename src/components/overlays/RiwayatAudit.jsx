@@ -181,6 +181,11 @@ export default function RiwayatAudit({ isOpen, onClose }) {
   }`;
   const textPrimary = isDark ? "text-white" : "text-gray-900";
   const textSecondary = isDark ? "text-gray-400" : "text-gray-500";
+  const inputClass = `mt-1 w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus-primary-theme ${
+    isDark
+      ? "bg-gray-700 border-gray-600 text-white"
+      : "bg-gray-50 border-gray-200 text-gray-900"
+  }`;
 
   return (
     <div className={`absolute inset-0 z-50 flex flex-col ${bg}`}>
@@ -215,7 +220,7 @@ export default function RiwayatAudit({ isOpen, onClose }) {
       </header>
 
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-8">
-        <section className="mt-5">
+        <section className="mt-6">
           <div className={`${card} p-4`}>
             <div className="flex items-center gap-2 mb-3">
               <Filter className={`w-4 h-4 ${textSecondary}`} />
@@ -234,11 +239,7 @@ export default function RiwayatAudit({ isOpen, onClose }) {
                 <select
                   value={actionFilter}
                   onChange={(e) => setActionFilter(e.target.value)}
-                  className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm ${
-                    isDark
-                      ? "bg-gray-700 border-gray-600 text-white"
-                      : "bg-gray-50 border-gray-200 text-gray-900"
-                  }`}
+                  className={inputClass}
                 >
                   {ACTION_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -257,11 +258,7 @@ export default function RiwayatAudit({ isOpen, onClose }) {
                     type="date"
                     value={fromDate}
                     onChange={(e) => setFromDate(e.target.value)}
-                    className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm ${
-                      isDark
-                        ? "bg-gray-700 border-gray-600 text-white"
-                        : "bg-gray-50 border-gray-200 text-gray-900"
-                    }`}
+                    className={inputClass}
                   />
                 </div>
                 <div>
@@ -272,11 +269,7 @@ export default function RiwayatAudit({ isOpen, onClose }) {
                     type="date"
                     value={toDate}
                     onChange={(e) => setToDate(e.target.value)}
-                    className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm ${
-                      isDark
-                        ? "bg-gray-700 border-gray-600 text-white"
-                        : "bg-gray-50 border-gray-200 text-gray-900"
-                    }`}
+                    className={inputClass}
                   />
                 </div>
               </div>
@@ -288,11 +281,7 @@ export default function RiwayatAudit({ isOpen, onClose }) {
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
-                  className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm ${
-                    isDark
-                      ? "bg-gray-700 border-gray-600 text-white"
-                      : "bg-gray-50 border-gray-200 text-gray-900"
-                  }`}
+                  className={inputClass}
                 >
                   {[10, 20, 30, 50].map((n) => (
                     <option key={n} value={n}>
@@ -308,7 +297,7 @@ export default function RiwayatAudit({ isOpen, onClose }) {
                   loadAudit(1);
                 }}
                 disabled={loading}
-                className="mt-1 w-full rounded-xl bg-blue-600 text-white text-sm font-bold py-2.5 hover:bg-blue-700 disabled:opacity-60"
+                className="mt-1 w-full rounded-xl btn-primary-theme text-sm font-bold py-2.5 shadow-primary-theme disabled:opacity-60"
               >
                 Terapkan Filter
               </button>
@@ -316,9 +305,11 @@ export default function RiwayatAudit({ isOpen, onClose }) {
           </div>
         </section>
 
-        <section className="mt-5">
+        <section className="mt-6">
           {error && (
-            <div className="mb-3 rounded-xl border border-red-200 bg-red-50 text-red-600 px-3 py-2 text-xs font-medium">
+            <div
+              className={`mb-3 rounded-xl border px-3 py-2 text-xs font-medium ${isDark ? "border-red-800 bg-red-900/30 text-red-300" : "border-red-200 bg-red-50 text-red-600"}`}
+            >
               {error}
             </div>
           )}
@@ -327,9 +318,15 @@ export default function RiwayatAudit({ isOpen, onClose }) {
             <div className="flex flex-col gap-3">
               {[1, 2, 3].map((i) => (
                 <div key={i} className={`${card} p-4 animate-pulse`}>
-                  <div className="h-3 bg-gray-200 rounded w-36 mb-3"></div>
-                  <div className="h-2.5 bg-gray-100 rounded w-full mb-2"></div>
-                  <div className="h-2.5 bg-gray-100 rounded w-3/4"></div>
+                  <div
+                    className={`h-3 rounded w-36 mb-3 ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+                  ></div>
+                  <div
+                    className={`h-2.5 rounded w-full mb-2 ${isDark ? "bg-gray-700" : "bg-gray-100"}`}
+                  ></div>
+                  <div
+                    className={`h-2.5 rounded w-3/4 ${isDark ? "bg-gray-700" : "bg-gray-100"}`}
+                  ></div>
                 </div>
               ))}
             </div>
@@ -351,7 +348,9 @@ export default function RiwayatAudit({ isOpen, onClose }) {
                           {formatActionLabel(item.action)}
                         </p>
                         {item.rolledBack && (
-                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDark ? "bg-emerald-900/40 text-emerald-300" : "bg-emerald-100 text-emerald-700"}`}
+                          >
                             Ditarik Kembali
                           </span>
                         )}
@@ -364,7 +363,9 @@ export default function RiwayatAudit({ isOpen, onClose }) {
                         {formatDate(item.timestamp)}
                       </p>
                       {item.rolledBack && item.rollbackInfo?.timestamp && (
-                        <p className="text-[11px] mt-1 text-emerald-600 font-medium">
+                        <p
+                          className={`text-[11px] mt-1 font-medium ${isDark ? "text-emerald-300" : "text-emerald-600"}`}
+                        >
                           Rollback pada{" "}
                           {formatDate(item.rollbackInfo.timestamp)}
                         </p>
@@ -377,7 +378,7 @@ export default function RiwayatAudit({ isOpen, onClose }) {
                       <button
                         onClick={() => handleRollback(item)}
                         disabled={rollingId === item.id || !item.rollbackable}
-                        className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 disabled:opacity-60 flex items-center gap-1"
+                        className={`rounded-lg px-2.5 py-1.5 text-xs font-bold disabled:opacity-60 flex items-center gap-1 ${isDark ? "text-amber-300 bg-amber-900/40 hover:bg-amber-900/60" : "text-amber-700 bg-amber-100 hover:bg-amber-200"}`}
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
                         {rollingId === item.id
@@ -401,9 +402,15 @@ export default function RiwayatAudit({ isOpen, onClose }) {
 
                   {!item.action.startsWith("ROLLBACK_") &&
                     ROLLBACKABLE_ACTIONS.has(item.action) && (
-                      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 flex items-start gap-2">
-                        <ShieldAlert className="w-3.5 h-3.5 text-amber-700 mt-0.5" />
-                        <p className="text-[11px] leading-relaxed text-amber-800">
+                      <div
+                        className={`mt-3 rounded-lg border px-3 py-2 flex items-start gap-2 ${isDark ? "border-amber-800 bg-amber-900/30" : "border-amber-200 bg-amber-50"}`}
+                      >
+                        <ShieldAlert
+                          className={`w-3.5 h-3.5 mt-0.5 ${isDark ? "text-amber-300" : "text-amber-700"}`}
+                        />
+                        <p
+                          className={`text-[11px] leading-relaxed ${isDark ? "text-amber-200" : "text-amber-800"}`}
+                        >
                           {item.rolledBack
                             ? "Aksi ini sudah ditarik kembali dan tidak dapat di-rollback ulang."
                             : item.rollbackWindowExpired
@@ -424,8 +431,12 @@ export default function RiwayatAudit({ isOpen, onClose }) {
                 disabled={page <= 1}
                 className={`px-3 py-2 rounded-xl text-xs font-bold ${
                   page <= 1
-                    ? "bg-gray-200 text-gray-400"
-                    : "bg-gray-800 text-white hover:bg-gray-700"
+                    ? isDark
+                      ? "bg-gray-800 text-gray-600"
+                      : "bg-gray-200 text-gray-400"
+                    : isDark
+                      ? "bg-gray-700 text-white hover:bg-gray-600"
+                      : "bg-gray-800 text-white hover:bg-gray-700"
                 }`}
               >
                 Sebelumnya
@@ -443,8 +454,12 @@ export default function RiwayatAudit({ isOpen, onClose }) {
                 disabled={page >= pagination.totalPages}
                 className={`px-3 py-2 rounded-xl text-xs font-bold ${
                   page >= pagination.totalPages
-                    ? "bg-gray-200 text-gray-400"
-                    : "bg-gray-800 text-white hover:bg-gray-700"
+                    ? isDark
+                      ? "bg-gray-800 text-gray-600"
+                      : "bg-gray-200 text-gray-400"
+                    : isDark
+                      ? "bg-gray-700 text-white hover:bg-gray-600"
+                      : "bg-gray-800 text-white hover:bg-gray-700"
                 }`}
               >
                 Berikutnya

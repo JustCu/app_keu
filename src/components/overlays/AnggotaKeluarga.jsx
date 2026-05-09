@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   ChevronLeft,
   UserPlus,
@@ -17,14 +17,14 @@ import { useAuth } from "../../context/AuthContext";
 import { useFamily } from "../../context/FamilyContext";
 
 const COLORS = [
-  "bg-blue-500",
-  "bg-purple-500",
+  "bg-primary-theme",
+  "bg-primary-theme",
   "bg-pink-500",
   "bg-green-500",
   "bg-orange-500",
   "bg-red-500",
-  "bg-teal-500",
-  "bg-indigo-500",
+  "bg-primary-theme",
+  "bg-primary-theme",
 ];
 const getColor = (str) =>
   COLORS[
@@ -194,8 +194,8 @@ export default function AnggotaKeluarga({ isOpen, onClose }) {
               Keluarga
             </p>
             <div className={`${card} p-4 flex items-center gap-3`}>
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <Users className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-primary-surface-strong-adaptive flex items-center justify-center">
+                <Users className="w-5 h-5 text-primary-adaptive" />
               </div>
               <div>
                 <p className={`font-bold text-sm ${textPrimary}`}>
@@ -217,7 +217,9 @@ export default function AnggotaKeluarga({ isOpen, onClose }) {
             Daftar Anggota
           </p>
           {familyError && !isLoadingFamily && (
-            <div className="mb-3 rounded-xl border border-red-200 bg-red-50 text-red-600 px-3 py-2 text-xs font-medium">
+            <div
+              className={`mb-3 rounded-xl border px-3 py-2 text-xs font-medium ${isDark ? "border-red-800 bg-red-900/30 text-red-300" : "border-red-200 bg-red-50 text-red-600"}`}
+            >
               {familyError}
             </div>
           )}
@@ -228,10 +230,16 @@ export default function AnggotaKeluarga({ isOpen, onClose }) {
                   key={i}
                   className={`${card} p-4 flex items-center gap-3 animate-pulse`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-gray-200"></div>
+                  <div
+                    className={`w-10 h-10 rounded-full ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+                  ></div>
                   <div className="flex-1">
-                    <div className="h-3 bg-gray-200 rounded w-32 mb-2"></div>
-                    <div className="h-2.5 bg-gray-100 rounded w-20"></div>
+                    <div
+                      className={`h-3 rounded w-32 mb-2 ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+                    ></div>
+                    <div
+                      className={`h-2.5 rounded w-20 ${isDark ? "bg-gray-700" : "bg-gray-100"}`}
+                    ></div>
                   </div>
                 </div>
               ))}
@@ -254,7 +262,7 @@ export default function AnggotaKeluarga({ isOpen, onClose }) {
                   return (
                     <div
                       key={member.id}
-                      className={`flex items-center gap-3 p-4 ${idx < members.length - 1 ? `border-b ${isDark ? "border-gray-700" : "border-gray-50"}` : ""}`}
+                      className={`flex items-center gap-3 px-4 py-3.5 ${idx < members.length - 1 ? `border-b ${isDark ? "border-gray-700" : "border-gray-50"}` : ""}`}
                     >
                       <div
                         className={`w-10 h-10 rounded-full ${color} flex items-center justify-center flex-shrink-0`}
@@ -276,7 +284,7 @@ export default function AnggotaKeluarga({ isOpen, onClose }) {
                             )}
                           </p>
                           {isAdmin && (
-                            <span className="flex items-center gap-1 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            <span className="flex items-center gap-1 bg-teal-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                               <Crown className="w-2.5 h-2.5" /> Kepala / Admin
                             </span>
                           )}
@@ -290,7 +298,7 @@ export default function AnggotaKeluarga({ isOpen, onClose }) {
                           <button
                             onClick={() => handlePromote(member)}
                             disabled={promotingId === member.userId}
-                            className="w-8 h-8 rounded-full flex items-center justify-center transition text-blue-500 hover:bg-blue-50 disabled:opacity-40"
+                            className="w-8 h-8 rounded-full flex items-center justify-center transition text-primary-adaptive hover:bg-primary-surface-adaptive disabled:opacity-40"
                             title="Jadikan admin"
                           >
                             <ShieldCheck className="w-4 h-4" />
@@ -300,7 +308,7 @@ export default function AnggotaKeluarga({ isOpen, onClose }) {
                           <button
                             onClick={() => handleRemove(member)}
                             disabled={removingId === member.userId}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition text-red-400 hover:bg-red-50 disabled:opacity-40`}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center transition ${isDark ? "text-red-300 hover:bg-red-900/30" : "text-red-400 hover:bg-red-50"} disabled:opacity-40`}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -314,7 +322,7 @@ export default function AnggotaKeluarga({ isOpen, onClose }) {
           )}
         </section>
 
-        {/* Undang Anggota — info */}
+        {/* Undang Anggota - info */}
         {user?.peran === "admin" && (
           <button
             onClick={copyCode}
@@ -328,7 +336,7 @@ export default function AnggotaKeluarga({ isOpen, onClose }) {
         <button
           onClick={handleLeaveFamily}
           disabled={isLeaving}
-          className="mt-4 w-full rounded-2xl p-4 flex items-center justify-center gap-2 font-bold text-sm transition text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-60"
+          className={`mt-4 w-full rounded-2xl p-4 flex items-center justify-center gap-2 font-bold text-sm transition disabled:opacity-60 ${isDark ? "text-red-300 border border-red-800 bg-red-900/30 hover:bg-red-900/50" : "text-red-500 border border-red-200 bg-red-50 hover:bg-red-100"}`}
         >
           <LogOut className="w-5 h-5" />
           {isLeaving ? "Memproses..." : "Keluar dari Keluarga"}

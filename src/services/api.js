@@ -497,3 +497,54 @@ export async function fetchAICategoryWeeklyHistory(
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Mengambil konfigurasi AI (provider dan API key) untuk keluarga
+ */
+export async function apiGetAIConfig({ familyId }) {
+  try {
+    const params = new URLSearchParams({
+      action: "getAIConfig",
+      familyId: String(familyId || ""),
+    });
+    const r = await fetch(`${GAS_WEB_APP_URL}?${params.toString()}`);
+    const res = await r.json();
+    if (res.status === "success") {
+      return {
+        success: true,
+        data: {
+          provider: res.data?.provider || "gemini",
+          apiKey: res.data?.apiKey || "",
+        },
+      };
+    }
+    return { success: false, error: res.message };
+  } catch {
+    return { success: false, error: "Koneksi gagal." };
+  }
+}
+
+/**
+ * Update konfigurasi AI (provider dan API key) untuk keluarga
+ */
+export async function apiUpdateAIConfig({
+  familyId,
+  provider,
+  apiKey,
+  testOnly = false,
+}) {
+  try {
+    const r = await post("updateAIConfig", {
+      familyId,
+      provider,
+      apiKey,
+      testOnly,
+    });
+    if (r.status === "success") {
+      return { success: true, data: r.data || null };
+    }
+    return { success: false, error: r.message };
+  } catch {
+    return { success: false, error: "Koneksi gagal." };
+  }
+}

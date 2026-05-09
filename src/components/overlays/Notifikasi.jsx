@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import {
   ChevronLeft,
   Lightbulb,
@@ -29,7 +29,7 @@ export default function Notifikasi({
       bg: isDark ? "bg-yellow-900/40" : "bg-yellow-50",
       text: "text-yellow-500",
       Icon: Lightbulb,
-      border: "border-l-4 border-indigo-400",
+      border: "border-l-4 border-teal-400",
     },
     warning: {
       bg: isDark ? "bg-red-900/40" : "bg-red-50",
@@ -38,8 +38,8 @@ export default function Notifikasi({
       border: "",
     },
     calendar: {
-      bg: isDark ? "bg-blue-900/40" : "bg-blue-50",
-      text: "text-blue-500",
+      bg: "bg-primary-surface-adaptive",
+      text: "text-primary-adaptive",
       Icon: CalendarDays,
       border: "",
     },
@@ -62,7 +62,7 @@ export default function Notifikasi({
         <h2 className="text-lg font-bold">Notifikasi</h2>
         <button
           onClick={onMarkAllRead}
-          className={`text-xs font-bold transition ${unreadCount > 0 ? "text-blue-500 hover:text-blue-600" : isDark ? "text-gray-600" : "text-gray-300"}`}
+          className={`text-xs font-bold transition ${unreadCount > 0 ? "text-primary-adaptive hover:text-primary-strong-adaptive" : isDark ? "text-gray-600" : "text-gray-300"}`}
           disabled={unreadCount === 0}
         >
           <span className="flex items-center gap-1">
@@ -93,7 +93,7 @@ export default function Notifikasi({
                 <li
                   key={notif.id}
                   onClick={() => onMarkRead?.(notif.id)}
-                  className={`flex gap-4 px-4 py-4 transition ${cfg.border} ${!isLast ? `border-b ${isDark ? "border-gray-800" : "border-gray-100"}` : ""} ${!isRead && notif.isNew ? (isDark ? "bg-gray-800/60" : "bg-indigo-50/30") : ""}`}
+                  className={`flex gap-4 px-4 py-4 transition ${cfg.border} ${!isLast ? `border-b ${isDark ? "border-gray-800" : "border-gray-100"}` : ""} ${!isRead && notif.isNew ? (isDark ? "bg-gray-800/60" : "bg-primary-surface-muted-adaptive") : ""}`}
                 >
                   {/* Icon */}
                   <div
@@ -111,7 +111,7 @@ export default function Notifikasi({
                       <span
                         className={`text-[10px] font-bold flex-shrink-0 px-2 py-0.5 rounded-full ${
                           !isRead && notif.isNew
-                            ? "bg-indigo-100 text-indigo-600"
+                            ? "bg-primary-surface-strong-adaptive text-primary-adaptive"
                             : isDark
                               ? "text-gray-500"
                               : "text-gray-400"
@@ -131,7 +131,7 @@ export default function Notifikasi({
                           e.stopPropagation();
                           onNavigate?.(notif.actionTarget, notif.id);
                         }}
-                        className="text-[11px] font-bold text-indigo-500 mt-2 tracking-wide hover:text-indigo-600 transition"
+                        className="text-[11px] font-bold text-primary-adaptive mt-2 tracking-wide hover:text-primary-strong-adaptive transition"
                       >
                         {notif.actionLabel} →
                       </button>

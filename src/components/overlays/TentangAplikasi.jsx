@@ -1,4 +1,4 @@
-import {
+﻿import {
   X,
   Wallet,
   GitBranch,
@@ -19,16 +19,14 @@ const FEATURES = [
   {
     icon: Wallet,
     label: "Catat pemasukan & pengeluaran",
-    color: "text-blue-500",
-    bg: "bg-blue-50",
-    bgDark: "bg-blue-900/30",
+    color: "text-primary-adaptive",
+    bg: "bg-primary-surface-adaptive",
   },
   {
     icon: Users,
     label: "Manajemen anggota keluarga",
-    color: "text-indigo-500",
-    bg: "bg-indigo-50",
-    bgDark: "bg-indigo-900/30",
+    color: "text-primary-adaptive",
+    bg: "bg-primary-surface-adaptive",
   },
   {
     icon: BarChart2,
@@ -47,9 +45,8 @@ const FEATURES = [
   {
     icon: Shield,
     label: "Data aman di Google Sheets",
-    color: "text-violet-500",
-    bg: "bg-violet-50",
-    bgDark: "bg-violet-900/30",
+    color: "text-primary-adaptive",
+    bg: "bg-primary-surface-adaptive",
   },
 ];
 
@@ -94,7 +91,7 @@ export default function TentangAplikasi({ isOpen, onClose }) {
         <div className="px-4 py-6 flex flex-col gap-6">
           {/* App Identity */}
           <div className="flex flex-col items-center text-center gap-3 pt-2">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
               <Wallet className="w-10 h-10 text-white" />
             </div>
             <div>
@@ -123,23 +120,21 @@ export default function TentangAplikasi({ isOpen, onClose }) {
             <div
               className={`rounded-2xl border overflow-hidden shadow-sm ${card}`}
             >
-              {FEATURES.map(
-                ({ icon: Icon, label, color, bg: bgLight, bgDark }, i) => (
+              {FEATURES.map(({ icon: Icon, label, color, bg }, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-3 px-4 py-3.5 ${i < FEATURES.length - 1 ? `border-b ${divider}` : ""}`}
+                >
                   <div
-                    key={i}
-                    className={`flex items-center gap-3 px-4 py-3.5 ${i < FEATURES.length - 1 ? `border-b ${divider}` : ""}`}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${bg}`}
                   >
-                    <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isDark ? bgDark : bgLight}`}
-                    >
-                      <Icon className={`w-4.5 h-4.5 ${color}`} size={18} />
-                    </div>
-                    <span className={`text-sm font-medium ${textPrimary}`}>
-                      {label}
-                    </span>
+                    <Icon className={`w-4.5 h-4.5 ${color}`} size={18} />
                   </div>
-                ),
-              )}
+                  <span className={`text-sm font-medium ${textPrimary}`}>
+                    {label}
+                  </span>
+                </div>
+              ))}
             </div>
           </section>
 
@@ -186,7 +181,7 @@ export default function TentangAplikasi({ isOpen, onClose }) {
               <div
                 className={`flex items-center gap-3 px-4 py-4 border-b ${divider}`}
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                   JC
                 </div>
                 <div>

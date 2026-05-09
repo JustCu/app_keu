@@ -156,6 +156,8 @@ function ensureSheetHeaders(sheetName, headers, options) {
       }
     });
   }
+
+  return sheet;
 }
 
 function initSheets() {
@@ -485,12 +487,23 @@ function handleRequest(e, isPost) {
         const row = sData
           .slice(1)
           .find((r) => r[1] === userId && r[2] === familyId);
+        const toBoolean = (val) => {
+          if (
+            val === true ||
+            val === "TRUE" ||
+            val === "true" ||
+            val === 1 ||
+            val === "1"
+          )
+            return true;
+          return false;
+        };
         output.data = row
           ? {
-              dailyReminderEnabled: row[3] === true || row[3] === "TRUE",
-              dailyReminderTime: row[4] || "20:00",
-              weeklyReportEnabled: row[5] === true || row[5] === "TRUE",
-              weeklyReportEmail: row[6] || user.email || "",
+              dailyReminderEnabled: toBoolean(row[3]),
+              dailyReminderTime: String(row[4] || "20:00").trim(),
+              weeklyReportEnabled: toBoolean(row[5]),
+              weeklyReportEmail: String(row[6] || user.email || "").trim(),
             }
           : {
               dailyReminderEnabled: false,
@@ -531,10 +544,14 @@ function handleRequest(e, isPost) {
         const sData = sSheet.getDataRange().getValues();
         const rowIdx = getSettingsRowIndex(sData, userId, familyId);
         const updatedAt = new Date().toISOString();
-        const dailyEnabled = p.dailyReminderEnabled === true;
-        const dailyTime = String(p.dailyReminderTime || "20:00");
-        const weeklyEnabled = p.weeklyReportEnabled === true;
-        const weeklyEmail = String(p.weeklyReportEmail || user.email || "");
+        const dailyEnabled =
+          p.dailyReminderEnabled === true || p.dailyReminderEnabled === "true";
+        const dailyTime = String(p.dailyReminderTime || "20:00").trim();
+        const weeklyEnabled =
+          p.weeklyReportEnabled === true || p.weeklyReportEnabled === "true";
+        const weeklyEmail = String(
+          p.weeklyReportEmail || user.email || "",
+        ).trim();
         if (rowIdx === -1) {
           sSheet.appendRow([
             generateId(),
@@ -553,7 +570,13 @@ function handleRequest(e, isPost) {
           sSheet.getRange(rowIdx, 7).setValue(weeklyEmail);
           sSheet.getRange(rowIdx, 8).setValue(updatedAt);
         }
-        output.data = { updatedAt };
+        output.data = {
+          dailyReminderEnabled: dailyEnabled,
+          dailyReminderTime: dailyTime,
+          weeklyReportEnabled: weeklyEnabled,
+          weeklyReportEmail: weeklyEmail,
+          updatedAt: updatedAt,
+        };
         output.message = "Pengaturan berhasil disimpan";
       }
     } else if (action === "getNotificationReads") {
@@ -1465,16 +1488,35 @@ function handleRequest(e, isPost) {
       }
     } else if (action === "getAIInsights") {
       const reqBody = isPost ? parseJSONSafe(e.postData.contents, {}) : {};
+      const familyId = e.parameter.familyId || null;
       const period = String(
         reqBody.period || e.parameter.period || "bulanan",
       ).toLowerCase();
-      const transaksi = getFilteredData(
-        "Transaksi",
-        e.parameter.familyId || null,
-        6,
-      );
-      const apiKey =
-        PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
+      const transaksi = getFilteredData("Transaksi", familyId, 6);
+
+      // Get AI config from sheet or fallback to script properties
+      let provider = "gemini";
+      let apiKey = "";
+
+      if (familyId) {
+        const ss = getSpreadsheet();
+        const configSheet = ss.getSheetByName("AI_Config");
+        if (configSheet) {
+          const configData = configSheet.getDataRange().getValues();
+          const configRow = configData.slice(1).find((r) => r[1] === familyId);
+          if (configRow) {
+            provider = String(configRow[2] || "gemini").toLowerCase();
+            apiKey = String(configRow[3] || "");
+          }
+        }
+      }
+
+      // Fallback to script properties for backward compatibility
+      if (!apiKey) {
+        apiKey =
+          PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
+      }
+
       if (!apiKey) {
         output.status = "error";
         output.message = "API_KEY_MISSING";
@@ -1531,19 +1573,51 @@ function handleRequest(e, isPost) {
           .map(([k, v]) => `- ${k}: Rp ${v}`)
           .join("\n");
         const prompt = `Ringkasan keuangan periode ${periodLabel}:\nJumlah transaksi: ${totalTransaksi}\nPemasukan: Rp ${masuk}\nPengeluaran: Rp ${keluar}\n${rincian || "- (Belum ada pengeluaran per pos)"}\n\nBerikan 1 paragraf analisis dan 2 saran penghematan. Gaya bahasa ramah, profesional, to the point. Jika data minim, tetap berikan saran praktis yang relevan.`;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
-        const resp = UrlFetchApp.fetch(url, {
-          method: "post",
-          contentType: "application/json",
-          muteHttpExceptions: true,
-          payload: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
-        });
-        const json = JSON.parse(resp.getContentText());
-        if (resp.getResponseCode() === 200 && json.candidates?.length > 0) {
-          output.data = json.candidates[0].content.parts[0].text;
+
+        let resp,
+          json,
+          success = false;
+
+        if (provider === "openai") {
+          resp = UrlFetchApp.fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "post",
+              contentType: "application/json",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+              },
+              muteHttpExceptions: true,
+              payload: JSON.stringify({
+                model: "gpt-3.5-turbo",
+                messages: [{ role: "user", content: prompt }],
+              }),
+            },
+          );
+          json = JSON.parse(resp.getContentText());
+          if (resp.getResponseCode() === 200 && json.choices?.length > 0) {
+            output.data = json.choices[0].message.content;
+            success = true;
+          }
         } else {
+          // default to Gemini
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+          resp = UrlFetchApp.fetch(url, {
+            method: "post",
+            contentType: "application/json",
+            muteHttpExceptions: true,
+            payload: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+            }),
+          });
+          json = JSON.parse(resp.getContentText());
+          if (resp.getResponseCode() === 200 && json.candidates?.length > 0) {
+            output.data = json.candidates[0].content.parts[0].text;
+            success = true;
+          }
+        }
+
+        if (!success) {
           output.status = "error";
           output.message = "Gagal: " + (json.error?.message || "Unknown");
         }
@@ -1768,7 +1842,22 @@ function handleRequest(e, isPost) {
         const apiKey =
           PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
 
-        if (!apiKey) {
+        // Get AI provider from sheet or use script properties fallback
+        let provider = "gemini";
+        const ss = getSpreadsheet();
+        const configSheet = ss.getSheetByName("AI_Config");
+        let actualApiKey = apiKey;
+
+        if (familyId && configSheet) {
+          const configData = configSheet.getDataRange().getValues();
+          const configRow = configData.slice(1).find((r) => r[1] === familyId);
+          if (configRow) {
+            provider = String(configRow[2] || "gemini").toLowerCase();
+            actualApiKey = String(configRow[3] || "") || apiKey;
+          }
+        }
+
+        if (!actualApiKey) {
           output.data = {
             categoryName,
             categoryType,
@@ -1793,20 +1882,52 @@ function handleRequest(e, isPost) {
             `{\"summary\":\"...\",\"reasons\":[\"...\",\"...\"],\"tips\":[\"...\",\"...\"]}\n` +
             `Aturan: bahasa Indonesia, singkat, praktis, relevan kategori ini.`;
 
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
-          const resp = UrlFetchApp.fetch(url, {
-            method: "post",
-            contentType: "application/json",
-            muteHttpExceptions: true,
-            payload: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-            }),
-          });
-          const json = parseJSONSafe(resp.getContentText(), {});
+          let resp,
+            json,
+            success = false,
+            modelText = "";
+          const sourceLabel = provider === "openai" ? "OPENAI" : "GEMINI";
 
-          if (resp.getResponseCode() === 200 && json.candidates?.length > 0) {
-            const modelText =
-              json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          if (provider === "openai") {
+            resp = UrlFetchApp.fetch(
+              "https://api.openai.com/v1/chat/completions",
+              {
+                method: "post",
+                contentType: "application/json",
+                headers: {
+                  Authorization: `Bearer ${actualApiKey}`,
+                },
+                muteHttpExceptions: true,
+                payload: JSON.stringify({
+                  model: "gpt-3.5-turbo",
+                  messages: [{ role: "user", content: prompt }],
+                }),
+              },
+            );
+            json = parseJSONSafe(resp.getContentText(), {});
+            if (resp.getResponseCode() === 200 && json.choices?.length > 0) {
+              modelText = json.choices[0].message.content || "";
+              success = true;
+            }
+          } else {
+            // default to Gemini
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${actualApiKey}`;
+            resp = UrlFetchApp.fetch(url, {
+              method: "post",
+              contentType: "application/json",
+              muteHttpExceptions: true,
+              payload: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+              }),
+            });
+            json = parseJSONSafe(resp.getContentText(), {});
+            if (resp.getResponseCode() === 200 && json.candidates?.length > 0) {
+              modelText = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+              success = true;
+            }
+          }
+
+          if (success) {
             const cleaned = String(modelText)
               .trim()
               .replace(/^```json\s*/i, "")
@@ -1839,9 +1960,9 @@ function handleRequest(e, isPost) {
               summary: merged.summary,
               reasons: merged.reasons,
               tips: merged.tips,
-              source: "GEMINI",
+              source: sourceLabel,
             };
-            persistWeeklyHistory(merged, "GEMINI");
+            persistWeeklyHistory(merged, sourceLabel);
           } else {
             output.data = {
               categoryName,
@@ -1945,6 +2066,144 @@ function handleRequest(e, isPost) {
           latestByCategory,
         };
       }
+    } else if (action === "getAIConfig") {
+      const familyId = String(e.parameter.familyId || "").trim();
+      if (!familyId) {
+        output.status = "error";
+        output.message = "familyId required";
+      } else {
+        const ss = getSpreadsheet();
+        const sheet = ensureSheetHeaders("AI_Config", [
+          "ID",
+          "FamilyId",
+          "Provider",
+          "ApiKey",
+          "CreatedAt",
+          "UpdatedAt",
+        ]);
+        const data = sheet.getDataRange().getValues();
+        const row = data.slice(1).find((r) => r[1] === familyId);
+        if (row) {
+          output.data = {
+            provider: row[2] || "gemini",
+            apiKey: row[3] || "",
+          };
+        } else {
+          output.data = {
+            provider: "gemini",
+            apiKey: "",
+          };
+        }
+      }
+    } else if (action === "updateAIConfig") {
+      const reqBody = isPost ? parseJSONSafe(e.postData.contents, {}) : {};
+      const familyId = String(reqBody.familyId || "").trim();
+      const provider = String(reqBody.provider || "gemini").toLowerCase();
+      const apiKey = String(reqBody.apiKey || "").trim();
+      const testOnly = reqBody.testOnly === true;
+
+      if (!familyId || !provider || !apiKey) {
+        output.status = "error";
+        output.message = "familyId, provider, dan apiKey required";
+      } else if (!["gemini", "openai"].includes(provider)) {
+        output.status = "error";
+        output.message = "provider harus 'gemini' atau 'openai'";
+      } else {
+        let testSuccess = false;
+        let testError = "";
+
+        if (provider === "gemini") {
+          const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+          const testResp = UrlFetchApp.fetch(testUrl, {
+            method: "post",
+            contentType: "application/json",
+            muteHttpExceptions: true,
+            payload: JSON.stringify({
+              contents: [{ parts: [{ text: "Test koneksi." }] }],
+            }),
+          });
+          const testJson = JSON.parse(testResp.getContentText());
+          if (testResp.getResponseCode() === 200) {
+            testSuccess = true;
+          } else {
+            testError = testJson.error?.message || "Gemini API error";
+          }
+        } else if (provider === "openai") {
+          const testResp = UrlFetchApp.fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "post",
+              contentType: "application/json",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+              },
+              muteHttpExceptions: true,
+              payload: JSON.stringify({
+                model: "gpt-3.5-turbo",
+                messages: [{ role: "user", content: "Test koneksi." }],
+                max_tokens: 10,
+              }),
+            },
+          );
+          const testJson = JSON.parse(testResp.getContentText());
+          if (testResp.getResponseCode() === 200) {
+            testSuccess = true;
+          } else {
+            testError = testJson.error?.message || "OpenAI API error";
+          }
+        }
+
+        if (testOnly) {
+          if (testSuccess) {
+            output.data = { testSuccess: true };
+          } else {
+            output.status = "error";
+            output.message = testError;
+          }
+        } else {
+          if (!testSuccess) {
+            output.status = "error";
+            output.message = `Konfigurasi gagal ditest: ${testError}`;
+          } else {
+            const ss = getSpreadsheet();
+            const sheet = ensureSheetHeaders("AI_Config", [
+              "ID",
+              "FamilyId",
+              "Provider",
+              "ApiKey",
+              "CreatedAt",
+              "UpdatedAt",
+            ]);
+            const data = sheet.getDataRange().getValues();
+            const existingRowIndex = data
+              .slice(1)
+              .findIndex((r) => r[1] === familyId);
+            const now = new Date().toISOString();
+
+            if (existingRowIndex >= 0) {
+              const rowNum = existingRowIndex + 2;
+              sheet.getRange(rowNum, 3).setValue(provider);
+              sheet.getRange(rowNum, 4).setValue(apiKey);
+              sheet.getRange(rowNum, 6).setValue(now);
+            } else {
+              sheet.appendRow([
+                generateId(),
+                familyId,
+                provider,
+                apiKey,
+                now,
+                now,
+              ]);
+            }
+
+            output.data = {
+              provider,
+              apiKey,
+              updatedAt: now,
+            };
+          }
+        }
+      }
     } else {
       throw new Error("Invalid action");
     }
@@ -2015,11 +2274,11 @@ function sendDailyReminderEmails() {
         subject: "📝 Jangan lupa catat keuanganmu hari ini!",
         htmlBody: `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-            <h2 style="color:#2563eb;margin-bottom:8px;">Dompet Keluarga</h2>
+            <h2 style="color:#0d9488;margin-bottom:8px;">Dompet Keluarga</h2>
             <p style="font-size:16px;color:#111827;">Halo <b>${user.nama}</b>,</p>
             <p style="color:#374151;">Ini adalah pengingat harian untuk mencatat transaksi keuangan keluarga kamu.</p>
             <p style="color:#374151;">Mencatat pengeluaran dan pemasukan secara rutin membantu kamu mengelola keuangan lebih baik.</p>
-            <a href="https://dompet.fathuryuni.my.id" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">Catat Sekarang</a>
+            <a href="https://dompet.fathuryuni.my.id" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#0d9488;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">Catat Sekarang</a>
             <p style="margin-top:24px;font-size:12px;color:#9ca3af;">Pengingat ini dikirim karena kamu mengaktifkan fitur Pengingat Harian di Dompet Keluarga. Kamu dapat menonaktifkannya di menu Pengaturan.</p>
           </div>
         `,
@@ -2102,13 +2361,13 @@ function sendWeeklyReportEmails() {
         subject: `📊 Laporan Mingguan ${familyName} — ${dateLabel}`,
         htmlBody: `
           <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;">
-            <h2 style="color:#2563eb;margin-bottom:4px;">Dompet Keluarga</h2>
+            <h2 style="color:#0d9488;margin-bottom:4px;">Dompet Keluarga</h2>
             <p style="color:#6b7280;margin-top:0;">Laporan Mingguan · ${dateLabel}</p>
             <h3 style="color:#111827;">${familyName}</h3>
             <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;overflow:hidden;margin:16px 0;">
-              <tr style="background:#eff6ff;">
-                <td style="padding:10px 12px;font-weight:bold;color:#2563eb;">Total Transaksi</td>
-                <td style="padding:10px 12px;text-align:right;font-weight:bold;color:#2563eb;">${totalTx}</td>
+              <tr style="background:#ccfbf1;">
+                <td style="padding:10px 12px;font-weight:bold;color:#0d9488;">Total Transaksi</td>
+                <td style="padding:10px 12px;text-align:right;font-weight:bold;color:#0d9488;">${totalTx}</td>
               </tr>
               <tr>
                 <td style="padding:10px 12px;color:#374151;">💰 Pemasukan</td>
@@ -2131,7 +2390,7 @@ function sendWeeklyReportEmails() {
               </table>`
                 : `<p style="color:#9ca3af;font-style:italic;">Belum ada pengeluaran minggu ini.</p>`
             }
-            <a href="https://dompet.fathuryuni.my.id" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">Buka Aplikasi</a>
+            <a href="https://dompet.fathuryuni.my.id" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#0d9488;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">Buka Aplikasi</a>
             <p style="margin-top:24px;font-size:12px;color:#9ca3af;">Email ini dikirim otomatis setiap Senin pagi karena kamu mengaktifkan Laporan Mingguan di Dompet Keluarga.</p>
           </div>
         `,

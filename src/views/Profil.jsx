@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   User,
   Settings,
@@ -64,7 +64,7 @@ export default function Profil() {
     <div className={isDark ? "bg-gray-900 min-h-full" : ""}>
       {/* Profile Header */}
       <section className="px-4 mt-8 flex flex-col items-center">
-        <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center border-4 border-white shadow-lg mb-4 relative">
+        <div className="w-24 h-24 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-full flex items-center justify-center border-4 border-white shadow-lg mb-4 relative">
           <span className="text-white font-bold text-3xl tracking-wider">
             {inisial}
           </span>
@@ -74,14 +74,16 @@ export default function Profil() {
               setEditEmail(user?.email || "");
               setIsEditOpen(true);
             }}
-            className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full border-2 border-white flex items-center justify-center text-white shadow-sm hover:bg-blue-700 active:scale-95 transition"
+            className="absolute bottom-0 right-0 w-8 h-8 btn-primary-theme rounded-full border-2 border-white flex items-center justify-center shadow-sm active:scale-95 transition"
           >
             <Edit3 className="w-3.5 h-3.5" />
           </button>
         </div>
         <h2 className={`text-xl font-bold ${textPrimary}`}>{nama}</h2>
         <p className={`text-sm font-medium ${textSecondary} mt-0.5`}>{email}</p>
-        <div className={`flex items-center gap-1 mt-2 px-3 py-1 rounded-full ${isDark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-600'}`}>
+        <div
+          className={`flex items-center gap-1 mt-2 px-3 py-1 rounded-full ${isDark ? "bg-green-900/40 text-green-400" : "bg-green-50 text-green-600"}`}
+        >
           <Shield className="w-3 h-3" />
           <span className="text-[11px] font-bold">Terverifikasi</span>
         </div>
@@ -96,9 +98,7 @@ export default function Profil() {
             className={`w-full flex items-center justify-between p-4 ${rowBorder} ${rowHover}`}
           >
             <div className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? "bg-indigo-900/40 text-indigo-400" : "bg-indigo-50 text-indigo-600"}`}
-              >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-primary-adaptive bg-primary-surface-adaptive">
                 <Users className="w-5 h-5" />
               </div>
               <div className="text-left">
@@ -123,7 +123,7 @@ export default function Profil() {
             className={`w-full flex items-center justify-between p-4 ${rowBorder} ${rowHover}`}
           >
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-primary-adaptive bg-primary-surface-adaptive">
                 <User className="w-5 h-5" />
               </div>
               <div className="text-left">
@@ -193,9 +193,7 @@ export default function Profil() {
             className={`w-full flex items-center justify-between p-4 ${rowBorder} ${rowHover}`}
           >
             <div className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? "bg-indigo-900/50 text-indigo-400" : "bg-indigo-50 text-indigo-600"}`}
-              >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-primary-adaptive bg-primary-surface-adaptive">
                 <Info className="w-5 h-5" />
               </div>
               <span className={`font-bold text-sm ${textPrimary}`}>
@@ -209,10 +207,12 @@ export default function Profil() {
 
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className={`w-full flex items-center justify-between p-4 hover:${isDark ? 'bg-red-950/60' : 'bg-red-50'} active:${isDark ? 'bg-red-950' : 'bg-red-100'} transition group`}
+            className={`w-full flex items-center justify-between p-4 hover:${isDark ? "bg-red-950/60" : "bg-red-50"} active:${isDark ? "bg-red-950" : "bg-red-100"} transition group`}
           >
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-red-500 transition ${isDark ? 'bg-red-950/50 group-hover:bg-red-950' : 'bg-red-50 group-hover:bg-red-100'}`}>
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-red-500 transition ${isDark ? "bg-red-950/50 group-hover:bg-red-950" : "bg-red-50 group-hover:bg-red-100"}`}
+              >
                 <LogOut className="w-5 h-5" />
               </div>
               <span className="font-bold text-sm text-red-500">
@@ -269,7 +269,7 @@ export default function Profil() {
                   type="text"
                   value={editNama}
                   onChange={(e) => setEditNama(e.target.value)}
-                  className={`w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+                  className={`w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus-primary-theme transition ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
                 />
               </div>
               <div>
@@ -282,7 +282,7 @@ export default function Profil() {
                   type="email"
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
-                  className={`w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+                  className={`w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus-primary-theme transition ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
                 />
               </div>
               {editError && (
@@ -293,7 +293,7 @@ export default function Profil() {
               <button
                 onClick={handleSaveProfile}
                 disabled={editLoading}
-                className="mt-2 w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 active:scale-[0.98] transition flex items-center justify-center gap-2 disabled:opacity-60"
+                className="mt-2 w-full btn-primary-theme font-bold py-3.5 rounded-xl shadow-primary-theme active:scale-[0.98] transition flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {editLoading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
