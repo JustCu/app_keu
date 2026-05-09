@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import {
   User,
   Settings,
@@ -12,20 +12,12 @@ import {
   Users,
   History,
 } from "lucide-react";
-import Pengaturan from "../components/overlays/Pengaturan";
-import AnggotaKeluarga from "../components/overlays/AnggotaKeluarga";
-import RiwayatAudit from "../components/overlays/RiwayatAudit";
-import TentangAplikasi from "../components/overlays/TentangAplikasi";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
-export default function Profil() {
+export default function Profil({ onOpenPengaturan, onOpenAnggota, onOpenAudit, onOpenTentang }) {
   const { user, logout, updateProfile } = useAuth();
   const { isDark } = useTheme();
-  const [isPengaturanOpen, setIsPengaturanOpen] = useState(false);
-  const [isAnggotaOpen, setIsAnggotaOpen] = useState(false);
-  const [isAuditOpen, setIsAuditOpen] = useState(false);
-  const [isTentangOpen, setIsTentangOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editNama, setEditNama] = useState(user?.nama || "");
   const [editEmail, setEditEmail] = useState(user?.email || "");
@@ -94,7 +86,7 @@ export default function Profil() {
         <h3 className={sectionLabel}>Akun & Keluarga</h3>
         <div className={cardClass}>
           <button
-            onClick={() => setIsAnggotaOpen(true)}
+            onClick={() => onOpenAnggota?.()}
             className={`w-full flex items-center justify-between p-4 ${rowBorder} ${rowHover}`}
           >
             <div className="flex items-center gap-3">
@@ -140,7 +132,7 @@ export default function Profil() {
             />
           </button>
           <button
-            onClick={() => setIsAuditOpen(true)}
+            onClick={() => onOpenAudit?.()}
             className={`w-full flex items-center justify-between p-4 ${rowHover}`}
           >
             <div className="flex items-center gap-3">
@@ -170,7 +162,7 @@ export default function Profil() {
         <h3 className={sectionLabel}>Pengaturan Lainnya</h3>
         <div className={cardClass}>
           <button
-            onClick={() => setIsPengaturanOpen(true)}
+            onClick={() => onOpenPengaturan?.()}
             className={`w-full flex items-center justify-between p-4 ${rowBorder} ${rowHover}`}
           >
             <div className="flex items-center gap-3">
@@ -189,7 +181,7 @@ export default function Profil() {
           </button>
 
           <button
-            onClick={() => setIsTentangOpen(true)}
+            onClick={() => onOpenTentang?.()}
             className={`w-full flex items-center justify-between p-4 ${rowBorder} ${rowHover}`}
           >
             <div className="flex items-center gap-3">
@@ -223,27 +215,10 @@ export default function Profil() {
         </div>
       </section>
 
-      {/* Overlays */}
-      <Pengaturan
-        isOpen={isPengaturanOpen}
-        onClose={() => setIsPengaturanOpen(false)}
-      />
-      <AnggotaKeluarga
-        isOpen={isAnggotaOpen}
-        onClose={() => setIsAnggotaOpen(false)}
-      />
-      <RiwayatAudit
-        isOpen={isAuditOpen}
-        onClose={() => setIsAuditOpen(false)}
-      />
-      <TentangAplikasi
-        isOpen={isTentangOpen}
-        onClose={() => setIsTentangOpen(false)}
-      />
 
       {/* Edit Profil Modal */}
       {isEditOpen && (
-        <div className="absolute inset-0 z-50 flex items-end bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[200] flex items-end bg-black/50 backdrop-blur-sm">
           <div
             className={`w-full rounded-t-3xl p-6 pb-10 shadow-2xl ${isDark ? "bg-gray-800" : "bg-white"}`}
           >
@@ -311,7 +286,7 @@ export default function Profil() {
 
       {/* Logout Confirm Modal */}
       {showLogoutConfirm && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-8">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm px-8">
           <div
             className={`w-full rounded-3xl p-6 shadow-2xl ${isDark ? "bg-gray-800" : "bg-white"}`}
           >

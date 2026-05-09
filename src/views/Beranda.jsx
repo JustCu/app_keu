@@ -6,6 +6,7 @@ export default function Beranda({
   transaksi = [],
   anggaran = [],
   isLoading = false,
+  onViewAll,
 }) {
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
   const { isDark } = useTheme();
@@ -131,7 +132,10 @@ export default function Beranda({
           >
             Transaksi Terakhir
           </h2>
-          <button className="text-sm font-medium text-primary-adaptive hover:text-primary-strong-adaptive transition active:scale-95">
+          <button 
+            onClick={() => onViewAll?.()}
+            className="text-sm font-medium text-primary-adaptive hover:text-primary-strong-adaptive transition active:scale-95"
+          >
             Lihat Semua
           </button>
         </div>
@@ -201,6 +205,7 @@ export default function Beranda({
           )}
         </div>
       </section>
+
     </div>
   );
 }

@@ -1,5 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
-import TambahAnggaran from "../components/overlays/TambahAnggaran";
+import { useEffect, useMemo, useState } from "react";
 import AnalisisKategori from "../components/overlays/AnalisisKategori";
 import { Edit2, Sparkles } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -13,12 +12,12 @@ export default function Anggaran({
   anggaran = [],
   isLoading = false,
   onRefresh,
+  onOpenAdd,
+  onOpenEdit,
 }) {
   const { user } = useAuth();
   const { isDark } = useTheme();
-  const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAnalisaOpen, setIsAnalisaOpen] = useState(false);
-  const [selectedAnggaran, setSelectedAnggaran] = useState(null);
   const [selectedAnalisaKategori, setSelectedAnalisaKategori] = useState(null);
   const [activeTab, setActiveTab] = useState("pengeluaran");
   const [aiEnabled, setAiEnabled] = useState(true);
@@ -201,18 +200,14 @@ export default function Anggaran({
   const handleEdit = (pos) => {
     if (!pos.id || pos.id.startsWith("default-")) {
       alert(
-        "Pos Anggaran bawaan tidak bisa diedit. Silakan buat pos anggaran baru di backend Anda.",
+        "Pos Anggaran bawaan tidak bisa diedit. Silakan buat pos anggaran baru.",
       );
       return;
     }
-    setSelectedAnggaran(pos);
-    setIsAddOpen(true);
+    onOpenEdit?.(pos);
   };
 
-  const handleCloseModal = () => {
-    setIsAddOpen(false);
-    setSelectedAnggaran(null);
-  };
+  const handleCloseModal = () => {}; // kept for safety
 
   const handleOpenAnalisa = (pos) => {
     setAiEnabled(localStorage.getItem("integrasiAI") !== "false");
@@ -284,10 +279,7 @@ export default function Anggaran({
             Pos Kategori
           </h2>
           <button
-            onClick={() => {
-              setSelectedAnggaran(null);
-              setIsAddOpen(true);
-            }}
+            onClick={() => onOpenAdd?.()}
             className="text-sm font-medium text-primary-adaptive flex items-center gap-1 hover:text-primary-strong-adaptive transition"
           >
             <svg
@@ -501,16 +493,6 @@ export default function Anggaran({
           )}
         </div>
       </section>
-
-      <TambahAnggaran
-        isOpen={isAddOpen}
-        onClose={handleCloseModal}
-        editData={selectedAnggaran}
-        onSuccess={() => {
-          handleCloseModal();
-          if (onRefresh) onRefresh();
-        }}
-      />
 
       <AnalisisKategori
         isOpen={isAnalisaOpen}

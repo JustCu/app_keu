@@ -7,6 +7,12 @@ import Anggaran from "./views/Anggaran";
 import Profil from "./views/Profil";
 import TambahTransaksi from "./components/overlays/TambahTransaksi";
 import Notifikasi from "./components/overlays/Notifikasi";
+import SemuaTransaksi from "./components/overlays/SemuaTransaksi";
+import Pengaturan from "./components/overlays/Pengaturan";
+import AnggotaKeluarga from "./components/overlays/AnggotaKeluarga";
+import RiwayatAudit from "./components/overlays/RiwayatAudit";
+import TentangAplikasi from "./components/overlays/TentangAplikasi";
+import TambahAnggaran from "./components/overlays/TambahAnggaran";
 import {
   fetchTransaksi,
   fetchAnggaran,
@@ -35,6 +41,14 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isNotifikasiOpen, setIsNotifikasiOpen] = useState(false);
   const [notifReadMap, setNotifReadMap] = useState({});
+  // Fullscreen overlay states (managed here so they render above the Header)
+  const [isSemuaTransaksiOpen, setIsSemuaTransaksiOpen] = useState(false);
+  const [isPengaturanOpen, setIsPengaturanOpen] = useState(false);
+  const [isAnggotaOpen, setIsAnggotaOpen] = useState(false);
+  const [isAuditOpen, setIsAuditOpen] = useState(false);
+  const [isTentangOpen, setIsTentangOpen] = useState(false);
+  const [isAddAnggaranOpen, setIsAddAnggaranOpen] = useState(false);
+  const [editAnggaranData, setEditAnggaranData] = useState(null);
   const { isDark } = useTheme();
   const { isLoggedIn, user } = useAuth();
   const { family, refreshFamily, clearFamilyState } = useFamily();
@@ -65,6 +79,14 @@ function App() {
       clearFamilyState();
     }
   }, [isLoggedIn, user?.familyId]);
+
+  // Reset view ke beranda saat logout (atau saat belum login)
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setCurrentView("beranda");
+    }
+  }, [isLoggedIn]);
+
 
   const notifications = useMemo(
     () => generateNotifications(transaksi, anggaran),
@@ -182,6 +204,7 @@ function App() {
               transaksi={transaksi}
               anggaran={anggaran}
               isLoading={isLoading}
+              onViewAll={() => setIsSemuaTransaksiOpen(true)}
             />
           </div>
           <div
@@ -201,12 +224,20 @@ function App() {
               anggaran={anggaran}
               isLoading={isLoading}
               onRefresh={loadData}
+              onOpenAdd={() => { setEditAnggaranData(null); setIsAddAnggaranOpen(true); }}
+              onOpenEdit={(pos) => { setEditAnggaranData(pos); setIsAddAnggaranOpen(true); }}
             />
           </div>
           <div
             className={`view-transition ${currentView === "profil" ? "opacity-100 block" : "opacity-0 hidden"} pb-8 ${isDark ? "bg-gray-900" : ""}`}
           >
-            <Profil onDataChange={loadData} />
+            <Profil
+              onDataChange={loadData}
+              onOpenPengaturan={() => setIsPengaturanOpen(true)}
+              onOpenAnggota={() => setIsAnggotaOpen(true)}
+              onOpenAudit={() => setIsAuditOpen(true)}
+              onOpenTentang={() => setIsTentangOpen(true)}
+            />
           </div>
         </main>
 
@@ -229,10 +260,37 @@ function App() {
           isOpen={isAddTransactionOpen}
           onClose={() => setIsAddTransactionOpen(false)}
           anggaran={anggaran}
-          onSuccess={() => {
-            setIsAddTransactionOpen(false);
-            loadData();
-          }}
+          onSuccess={() => { setIsAddTransactionOpen(false); loadData(); }}
+        />
+
+        {/* Fullscreen overlays — rendered here (sibling of Header) so they cover everything */}
+        <SemuaTransaksi
+          isOpen={isSemuaTransaksiOpen}
+          onClose={() => setIsSemuaTransaksiOpen(false)}
+          transaksi={transaksi}
+          anggaran={anggaran}
+        />
+        <Pengaturan
+          isOpen={isPengaturanOpen}
+          onClose={() => setIsPengaturanOpen(false)}
+        />
+        <AnggotaKeluarga
+          isOpen={isAnggotaOpen}
+          onClose={() => setIsAnggotaOpen(false)}
+        />
+        <RiwayatAudit
+          isOpen={isAuditOpen}
+          onClose={() => setIsAuditOpen(false)}
+        />
+        <TentangAplikasi
+          isOpen={isTentangOpen}
+          onClose={() => setIsTentangOpen(false)}
+        />
+        <TambahAnggaran
+          isOpen={isAddAnggaranOpen}
+          onClose={() => { setIsAddAnggaranOpen(false); setEditAnggaranData(null); }}
+          editData={editAnggaranData}
+          onSuccess={() => { setIsAddAnggaranOpen(false); setEditAnggaranData(null); loadData(); }}
         />
       </div>
     </div>
