@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, lazy, Suspense } from "react";
+import { useState, useMemo, useEffect, lazy, Suspense, Component } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import ScrollReveal from "../components/common/ScrollReveal";
@@ -263,35 +263,79 @@ export default function Laporan({
         </div>
       </ScrollReveal>
 
-      <Suspense fallback={null}>
-        <ScrollReveal delay={90} duration={620} y={18}>
-          <LaporanCharts
-            isDark={isDark}
-            filter={filter}
-            periodTitle={periodTitle}
-            totalMasuk={totalMasuk}
-            totalKeluar={totalKeluar}
-            barData={barData}
-            pengeluaranPerPos={pengeluaranPerPos}
-          />
-        </ScrollReveal>
-        <ScrollReveal delay={150} duration={620} y={18}>
-          <LaporanAIInsights
-            isDark={isDark}
-            isActive={isActive}
-            aiEnabled={aiEnabled}
-            familyId={user?.familyId}
-            filter={filter}
-            periodTitle={periodTitle}
-            filteredTransaksi={filteredTransaksi}
-            totalMasuk={totalMasuk}
-            totalKeluar={totalKeluar}
-            pengeluaranPerPos={pengeluaranPerPos}
-          />
-        </ScrollReveal>
-      </Suspense>
+      <LaporanErrorBoundary isDark={isDark}>
+        <Suspense fallback={null}>
+          <ScrollReveal delay={90} duration={620} y={18}>
+            <LaporanCharts
+              isDark={isDark}
+              filter={filter}
+              periodTitle={periodTitle}
+              totalMasuk={totalMasuk}
+              totalKeluar={totalKeluar}
+              barData={barData}
+              pengeluaranPerPos={pengeluaranPerPos}
+            />
+          </ScrollReveal>
+          <ScrollReveal delay={150} duration={620} y={18}>
+            <LaporanAIInsights
+              isDark={isDark}
+              isActive={isActive}
+              aiEnabled={aiEnabled}
+              familyId={user?.familyId}
+              filter={filter}
+              periodTitle={periodTitle}
+              filteredTransaksi={filteredTransaksi}
+              totalMasuk={totalMasuk}
+              totalKeluar={totalKeluar}
+              pengeluaranPerPos={pengeluaranPerPos}
+            />
+          </ScrollReveal>
+        </Suspense>
+      </LaporanErrorBoundary>
     </div>
   );
+}
+
+class LaporanErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.children !== this.props.children && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  render() {
+    if (!this.state.hasError) return this.props.children;
+    const { isDark } = this.props;
+
+    return (
+      <section className="px-4 mt-6 pb-6">
+        <div
+          className={`rounded-2xl border p-5 ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}
+        >
+          <p
+            className={`text-sm font-bold ${isDark ? "text-gray-200" : "text-gray-900"}`}
+          >
+            Grafik belum didukung di browser ini.
+          </p>
+          <p
+            className={`text-xs mt-2 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+          >
+            Silakan update Safari ke versi terbaru atau gunakan Chrome agar
+            visualisasi laporan tampil penuh.
+          </p>
+        </div>
+      </section>
+    );
+  }
 }
 
 function LaporanLoadingSkeleton({ isDark }) {
