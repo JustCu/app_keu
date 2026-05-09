@@ -82,18 +82,18 @@ export default function Beranda({
             </div>
           </div>
 
-          {/* Bottom Row: In & Out (Glassmorphism Box) */}
-          <div className="relative z-10 bg-white/10 backdrop-blur-md rounded-xl p-4 flex justify-between border border-white/10 mt-2">
+          {/* Bottom Row: In & Out */}
+          <div className="relative z-10 flex justify-between mt-8">
             {/* Pemasukan */}
-            <div className="flex-1 flex gap-3 items-center">
-              <div className="w-8 h-8 rounded-full bg-green-400/20 flex items-center justify-center text-green-400 border border-green-400/30">
-                <ArrowDownRight className="w-4 h-4" />
+            <div className="flex flex-1 items-center gap-3">
+              <div className="w-10 h-10 shrink-0 rounded-xl bg-green-400/20 flex items-center justify-center text-green-400 border border-green-400/30">
+                <ArrowDownRight className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-[10px] text-primary-on-dark uppercase tracking-wider font-bold">
-                  Masuk
+                  Pemasukan
                 </p>
-                <p className="text-sm font-bold text-white mt-0.5">
+                <p className="text-sm font-bold text-white mt-0.5 whitespace-nowrap">
                   {isBalanceHidden
                     ? "Rp •••••••"
                     : `Rp ${formatRupiah(totalMasuk)}`}
@@ -101,19 +101,16 @@ export default function Beranda({
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="w-[1px] bg-white/20 mx-2"></div>
-
             {/* Pengeluaran */}
-            <div className="flex-1 flex gap-3 items-center pl-2">
-              <div className="w-8 h-8 rounded-full bg-red-400/20 flex items-center justify-center text-red-400 border border-red-400/30">
-                <ArrowUpRight className="w-4 h-4" />
+            <div className="flex flex-1 items-center justify-end gap-3">
+              <div className="w-10 h-10 shrink-0 rounded-xl bg-red-400/20 flex items-center justify-center text-red-400 border border-red-400/30">
+                <ArrowUpRight className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-[10px] text-primary-on-dark uppercase tracking-wider font-bold">
-                  Keluar
+                  Pengeluaran
                 </p>
-                <p className="text-sm font-bold text-white mt-0.5">
+                <p className="text-sm font-bold text-white mt-0.5 whitespace-nowrap">
                   {isBalanceHidden
                     ? "Rp •••••••"
                     : `Rp ${formatRupiah(totalKeluar)}`}

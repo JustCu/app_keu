@@ -245,7 +245,7 @@ export default function Anggaran({
     <div>
       {/* Header Saldo Alokasi */}
       <section className="px-4 mt-4">
-        <div className="bg-gray-900 rounded-2xl p-6 text-white shadow-lg flex flex-col justify-between relative overflow-hidden">
+        <div className={`${isDark ? 'bg-gray-800' : 'bg-gray-900'} rounded-2xl p-6 text-white shadow-lg flex flex-col justify-between relative overflow-hidden`}>
           <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
 
           <div className="relative z-10">
