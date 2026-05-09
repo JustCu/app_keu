@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { X, Sparkles, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
+import { X, Sparkles, AlertCircle, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import {
@@ -14,23 +14,23 @@ const PERIOD_OPTIONS = [
   { key: "semua", label: "Semua" },
 ];
 
-const getScoreStyle = (score, isDark) => {
+const getScoreStyle = (score) => {
   if (score >= 80)
     return {
-      ring: isDark ? "ring-emerald-800/60" : "ring-emerald-100",
-      text: isDark ? "text-emerald-300" : "text-emerald-600",
-      bg: isDark ? "bg-emerald-900/30" : "bg-emerald-50",
+      ring: "semantic-success-ring",
+      text: "semantic-success-text",
+      bg: "semantic-success-surface",
     };
   if (score >= 60)
     return {
-      ring: isDark ? "ring-amber-800/60" : "ring-amber-100",
-      text: isDark ? "text-amber-300" : "text-amber-600",
-      bg: isDark ? "bg-amber-900/30" : "bg-amber-50",
+      ring: "semantic-warning-ring",
+      text: "semantic-warning-text",
+      bg: "semantic-warning-surface",
     };
   return {
-    ring: isDark ? "ring-red-800/60" : "ring-red-100",
-    text: isDark ? "text-red-300" : "text-red-600",
-    bg: isDark ? "bg-red-900/30" : "bg-red-50",
+    ring: "semantic-danger-ring",
+    text: "semantic-danger-text",
+    bg: "semantic-danger-surface",
   };
 };
 
@@ -142,7 +142,7 @@ export default function AnalisisKategori({
   if (!isOpen) return null;
 
   const score = Number(insight?.score || 0);
-  const scoreStyle = getScoreStyle(score, isDark);
+  const scoreStyle = getScoreStyle(score);
   const panelClass = isDark
     ? "bg-gray-800 border-gray-700"
     : "bg-white border-gray-100";
@@ -152,7 +152,7 @@ export default function AnalisisKategori({
 
   return (
     <div
-      className={`absolute inset-0 z-50 flex flex-col shadow-2xl ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}
+      className={`fixed inset-0 z-[70] flex flex-col shadow-2xl ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}
     >
       <header
         className={`flex items-center justify-between px-4 pt-8 pb-4 border-b ${isDark ? "border-gray-800 bg-gray-900" : "border-gray-100 bg-white"}`}
@@ -169,7 +169,7 @@ export default function AnalisisKategori({
         </div>
         <button
           onClick={onClose}
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition ${isDark ? "bg-gray-800 text-gray-300 hover:bg-gray-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+          className="overlay-muted-button w-8 h-8 rounded-full flex items-center justify-center transition"
         >
           <X className="w-5 h-5" />
         </button>
@@ -201,9 +201,7 @@ export default function AnalisisKategori({
 
       <div className="flex-1 overflow-y-auto no-scrollbar p-4 pb-8">
         {!aiEnabled && (
-          <div
-            className={`rounded-2xl border p-4 ${isDark ? "border-amber-800 bg-amber-900/30" : "border-amber-200 bg-amber-50"}`}
-          >
+          <div className="overlay-warning-soft rounded-2xl border p-4">
             <p
               className={`text-sm font-bold ${isDark ? "text-amber-300" : "text-amber-700"}`}
             >
@@ -219,14 +217,10 @@ export default function AnalisisKategori({
         )}
 
         {aiEnabled && loading && (
-          <div
-            className={`rounded-2xl border p-8 flex flex-col items-center gap-2 ${panelClass}`}
-          >
-            <Loader2 className="w-5 h-5 text-primary-adaptive animate-spin" />
-            <p className={`text-sm ${textMuted}`}>
-              Menganalisa kategori dengan AI...
-            </p>
-          </div>
+          <AnalisisKategoriLoadingSkeleton
+            isDark={isDark}
+            panelClass={panelClass}
+          />
         )}
 
         {aiEnabled && !loading && error && (
@@ -346,7 +340,7 @@ export default function AnalisisKategori({
                     key={`${tip}-${idx}`}
                     className={`text-sm flex gap-2 ${isDark ? "text-gray-200" : "text-gray-700"}`}
                   >
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span className="semantic-success-dot mt-1.5 w-1.5 h-1.5 rounded-full shrink-0"></span>
                     <span>{tip}</span>
                   </li>
                 ))}
@@ -381,7 +375,7 @@ export default function AnalisisKategori({
                         </p>
                       </div>
                       <span
-                        className={`text-xs font-bold px-2 py-1 rounded-md ${getScoreStyle(Number(h.score || 0), isDark).bg} ${getScoreStyle(Number(h.score || 0), isDark).text}`}
+                        className={`text-xs font-bold px-2 py-1 rounded-md ${getScoreStyle(Number(h.score || 0)).bg} ${getScoreStyle(Number(h.score || 0)).text}`}
                       >
                         {Number(h.score || 0)}
                       </span>
@@ -392,6 +386,51 @@ export default function AnalisisKategori({
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function AnalisisKategoriLoadingSkeleton({ isDark, panelClass }) {
+  const line = isDark ? "bg-white/10" : "bg-gray-200";
+  const lineSoft = isDark ? "bg-white/7" : "bg-gray-100";
+
+  return (
+    <div className="space-y-4" aria-hidden="true">
+      <div className={`rounded-2xl border p-4 skeleton-shimmer ${panelClass}`}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className={`h-3 w-24 rounded-full ${lineSoft}`} />
+            <div className={`mt-2 h-8 w-20 rounded-xl ${line}`} />
+          </div>
+          <div className={`w-12 h-12 rounded-full ${line}`} />
+        </div>
+        <div className={`mt-4 h-3 w-4/5 rounded-full ${lineSoft}`} />
+      </div>
+
+      <div
+        className={`rounded-2xl border p-4 skeleton-shimmer ${panelClass}`}
+        style={{ "--skeleton-delay": "140ms" }}
+      >
+        <div className={`h-3 w-24 rounded-full ${line}`} />
+        <div className={`mt-3 h-2.5 w-36 rounded-full ${lineSoft}`} />
+        <div className="mt-4 space-y-2">
+          <div className={`h-3 w-full rounded-full ${line}`} />
+          <div className={`h-3 w-11/12 rounded-full ${line}`} />
+          <div className={`h-3 w-4/5 rounded-full ${lineSoft}`} />
+        </div>
+      </div>
+
+      <div
+        className={`rounded-2xl border p-4 skeleton-shimmer ${panelClass}`}
+        style={{ "--skeleton-delay": "280ms" }}
+      >
+        <div className={`h-3 w-20 rounded-full ${line}`} />
+        <div className="mt-3 space-y-2">
+          <div className={`h-3 w-10/12 rounded-full ${lineSoft}`} />
+          <div className={`h-3 w-9/12 rounded-full ${lineSoft}`} />
+          <div className={`h-3 w-11/12 rounded-full ${lineSoft}`} />
+        </div>
       </div>
     </div>
   );

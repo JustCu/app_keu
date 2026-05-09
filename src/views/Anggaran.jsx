@@ -1,9 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
-import AnalisisKategori from "../components/overlays/AnalisisKategori";
+import { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { Edit2, Sparkles } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { fetchAICategoryWeeklyHistory } from "../services/api";
+import ScrollReveal from "../components/common/ScrollReveal";
+
+const AnalisisKategori = lazy(
+  () => import("../components/overlays/AnalisisKategori"),
+);
 
 const formatRupiah = (angka) => new Intl.NumberFormat("id-ID").format(angka);
 
@@ -132,18 +136,18 @@ export default function Anggaran({
             text: "text-primary-adaptive",
           },
           {
-            bg: "bg-yellow-500",
-            bar: "bg-yellow-100",
-            iconBg: "bg-yellow-50",
-            iconBorder: "border-yellow-100",
-            text: "text-yellow-600",
+            bg: "semantic-warning-fill",
+            bar: "semantic-warning-surface",
+            iconBg: "semantic-warning-surface",
+            iconBorder: "semantic-warning-border",
+            text: "semantic-warning-text",
           },
           {
-            bg: "bg-green-500",
-            bar: "bg-green-100",
-            iconBg: "bg-green-50",
-            iconBorder: "border-green-100",
-            text: "text-green-600",
+            bg: "semantic-success-fill",
+            bar: "semantic-success-surface",
+            iconBg: "semantic-success-surface",
+            iconBorder: "semantic-success-border",
+            text: "semantic-success-text",
           },
         ];
         const color = colors[index % colors.length];
@@ -188,13 +192,7 @@ export default function Anggaran({
       : 0;
 
   if (isLoading) {
-    return (
-      <p
-        className={`text-center mt-10 ${isDark ? "text-gray-400" : "text-gray-500"}`}
-      >
-        Memuat anggaran...
-      </p>
-    );
+    return <AnggaranLoadingSkeleton isDark={isDark} />;
   }
 
   const handleEdit = (pos) => {
@@ -221,17 +219,9 @@ export default function Anggaran({
         ? "bg-gray-700 text-gray-400 border-gray-600"
         : "bg-gray-100 text-gray-500 border-gray-200";
     }
-    if (score >= 80)
-      return isDark
-        ? "bg-emerald-900/40 text-emerald-400 border-emerald-700"
-        : "bg-emerald-50 text-emerald-700 border-emerald-200";
-    if (score >= 60)
-      return isDark
-        ? "bg-amber-900/40 text-amber-400 border-amber-700"
-        : "bg-amber-50 text-amber-700 border-amber-200";
-    return isDark
-      ? "bg-rose-900/40 text-rose-400 border-rose-700"
-      : "bg-rose-50 text-rose-700 border-rose-200";
+    if (score >= 80) return "overlay-success-soft border";
+    if (score >= 60) return "overlay-warning-soft border";
+    return "overlay-danger-soft border";
   };
 
   const getCategoryScore = (categoryName) => {
@@ -245,29 +235,33 @@ export default function Anggaran({
     <div>
       {/* Header Saldo Alokasi */}
       <section className="px-4 mt-4">
-        <div className={`${isDark ? 'bg-gray-800' : 'bg-gray-900'} rounded-2xl p-6 text-white shadow-lg flex flex-col justify-between relative overflow-hidden`}>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
+        <ScrollReveal delay={30} duration={620}>
+          <div
+            className={`${isDark ? "bg-gray-800" : "bg-gray-900"} rounded-2xl p-6 text-white shadow-lg flex flex-col justify-between relative overflow-hidden`}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
 
-          <div className="relative z-10">
-            <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-1">
-              Total Sisa Alokasi
-            </p>
-            <h2 className="text-3xl font-bold tracking-tight mb-4">
-              Rp {formatRupiah(sisaAlokasi)}
-            </h2>
+            <div className="relative z-10">
+              <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-1">
+                Total Sisa Alokasi
+              </p>
+              <h2 className="text-3xl font-bold tracking-tight mb-4">
+                Rp {formatRupiah(sisaAlokasi)}
+              </h2>
 
-            <div className="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden mb-2">
-              <div
-                className={`h-full rounded-full ${totalPercentage > 90 ? "bg-red-400" : "bg-green-400"}`}
-                style={{ width: `${totalPercentage}%` }}
-              ></div>
+              <div className="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden mb-2">
+                <div
+                  className={`h-full rounded-full ${totalPercentage > 90 ? "semantic-danger-fill" : "semantic-success-fill"}`}
+                  style={{ width: `${totalPercentage}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-400 text-right">
+                Terpakai Rp {formatRupiah(totalTerpakai)} dari Rp{" "}
+                {formatRupiah(totalAnggaran)}
+              </p>
             </div>
-            <p className="text-xs text-gray-400 text-right">
-              Terpakai Rp {formatRupiah(totalTerpakai)} dari Rp{" "}
-              {formatRupiah(totalAnggaran)}
-            </p>
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* Daftar Anggaran & Target Pemasukan */}
@@ -309,13 +303,13 @@ export default function Anggaran({
 
           <button
             onClick={() => setActiveTab("pengeluaran")}
-            className={`relative z-10 flex-1 text-sm py-2 transition-colors ${activeTab === "pengeluaran" ? "font-bold text-red-500" : `font-medium ${isDark ? "text-gray-400" : "text-gray-500"}`}`}
+            className={`relative z-10 flex-1 text-sm py-2 transition-colors ${activeTab === "pengeluaran" ? "semantic-danger-text font-bold" : `font-medium ${isDark ? "text-gray-400" : "text-gray-500"}`}`}
           >
             Pengeluaran
           </button>
           <button
             onClick={() => setActiveTab("pemasukan")}
-            className={`relative z-10 flex-1 text-sm py-2 transition-colors ${activeTab === "pemasukan" ? "font-bold text-green-500" : `font-medium ${isDark ? "text-gray-400" : "text-gray-500"}`}`}
+            className={`relative z-10 flex-1 text-sm py-2 transition-colors ${activeTab === "pemasukan" ? "semantic-success-text font-bold" : `font-medium ${isDark ? "text-gray-400" : "text-gray-500"}`}`}
           >
             Pemasukan
           </button>
@@ -324,165 +318,167 @@ export default function Anggaran({
         <div className="flex flex-col gap-4">
           {activeTab === "pengeluaran" ? (
             rincianPengeluaran.map((pos, i) => (
-              <div
-                key={i}
-                className={`p-4 rounded-2xl shadow-sm border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border ${isDark ? "bg-gray-700 border-gray-600" : `${pos.color.iconBg} ${pos.color.iconBorder}`}`}
-                    >
-                      {pos.ikon}
-                    </div>
-                    <div>
-                      <p
-                        className={`font-bold text-[15px] leading-tight ${isDark ? "text-white" : "text-gray-900"}`}
-                      >
-                        {pos.nama}
-                      </p>
-                      <p
-                        className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
-                      >
-                        Sisa Saldo
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <span
-                      className={`px-2 py-1 rounded-lg text-[11px] font-bold border ${getScoreBadgeClass(getCategoryScore(pos.nama))}`}
-                      title="Skor kesehatan AI mingguan"
-                    >
-                      {getCategoryScore(pos.nama) === null
-                        ? "AI --"
-                        : `AI ${getCategoryScore(pos.nama)}`}
-                    </span>
-                    <button
-                      onClick={() => handleOpenAnalisa(pos)}
-                      className={`p-1.5 rounded-lg transition ${isDark ? "text-primary-adaptive hover:text-primary-strong-adaptive hover:bg-primary-surface-adaptive" : "text-primary-adaptive hover:text-primary-strong-adaptive hover:bg-primary-surface-adaptive"}`}
-                      title="Analisa AI"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleEdit(pos)}
-                      className={`p-1.5 rounded-lg transition ${isDark ? "text-gray-500 hover:text-primary-adaptive hover:bg-primary-surface-adaptive" : "text-gray-400 hover:text-primary-adaptive hover:bg-primary-surface-adaptive"}`}
-                      title="Edit kategori"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <p
-                  className={`font-bold text-[26px] leading-none mb-4 ${pos.percentage > 90 ? "text-red-500" : pos.color.text}`}
-                >
-                  Rp {formatRupiah(pos.sisa)}
-                </p>
-
+              <ScrollReveal key={i} delay={80 + i * 70} duration={560} y={16}>
                 <div
-                  className={`w-full h-2.5 rounded-full overflow-hidden ${isDark ? "bg-gray-700" : pos.color.bar}`}
+                  className={`p-4 rounded-2xl shadow-sm border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}
                 >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border ${isDark ? "bg-gray-700 border-gray-600" : `${pos.color.iconBg} ${pos.color.iconBorder}`}`}
+                      >
+                        {pos.ikon}
+                      </div>
+                      <div>
+                        <p
+                          className={`font-bold text-[15px] leading-tight ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
+                          {pos.nama}
+                        </p>
+                        <p
+                          className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                        >
+                          Sisa Saldo
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <span
+                        className={`px-2 py-1 rounded-lg text-[11px] font-bold border ${getScoreBadgeClass(getCategoryScore(pos.nama))}`}
+                        title="Skor kesehatan AI mingguan"
+                      >
+                        {getCategoryScore(pos.nama) === null
+                          ? "AI --"
+                          : `AI ${getCategoryScore(pos.nama)}`}
+                      </span>
+                      <button
+                        onClick={() => handleOpenAnalisa(pos)}
+                        className={`p-1.5 rounded-lg transition ${isDark ? "text-primary-adaptive hover:text-primary-strong-adaptive hover:bg-primary-surface-adaptive" : "text-primary-adaptive hover:text-primary-strong-adaptive hover:bg-primary-surface-adaptive"}`}
+                        title="Analisa AI"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(pos)}
+                        className={`p-1.5 rounded-lg transition ${isDark ? "text-gray-500 hover:text-primary-adaptive hover:bg-primary-surface-adaptive" : "text-gray-400 hover:text-primary-adaptive hover:bg-primary-surface-adaptive"}`}
+                        title="Edit kategori"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <p
+                    className={`font-bold text-[26px] leading-none mb-4 ${pos.percentage > 90 ? "semantic-danger-text" : pos.color.text}`}
+                  >
+                    Rp {formatRupiah(pos.sisa)}
+                  </p>
+
                   <div
-                    className={`h-full rounded-full ${pos.percentage > 90 ? "bg-red-500" : pos.color.bg}`}
-                    style={{ width: `${pos.percentage}%` }}
-                  ></div>
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  <p
-                    className={`text-xs font-medium ${pos.percentage > 90 ? "text-red-500" : isDark ? "text-gray-400" : "text-gray-500"}`}
+                    className={`w-full h-2.5 rounded-full overflow-hidden ${isDark ? "bg-gray-700" : pos.color.bar}`}
                   >
-                    Terpakai Rp {formatRupiah(pos.terpakai)}
-                  </p>
-                  <p
-                    className={`text-xs font-medium ${isDark ? "text-gray-500" : "text-gray-400"}`}
-                  >
-                    Anggaran Rp {formatRupiah(pos.batas)}
-                  </p>
+                    <div
+                      className={`h-full rounded-full ${pos.percentage > 90 ? "semantic-danger-fill" : pos.color.bg}`}
+                      style={{ width: `${pos.percentage}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <p
+                      className={`text-xs font-medium ${pos.percentage > 90 ? "semantic-danger-text" : isDark ? "text-gray-400" : "text-gray-500"}`}
+                    >
+                      Terpakai Rp {formatRupiah(pos.terpakai)}
+                    </p>
+                    <p
+                      className={`text-xs font-medium ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                    >
+                      Anggaran Rp {formatRupiah(pos.batas)}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </ScrollReveal>
             ))
           ) : rincianPemasukan.length > 0 ? (
             rincianPemasukan.map((pos, i) => (
-              <div
-                key={i}
-                className={`p-4 rounded-2xl shadow-sm border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border ${isDark ? "bg-gray-700 border-gray-600" : `${pos.color.iconBg} ${pos.color.iconBorder}`}`}
-                    >
-                      {pos.ikon}
-                    </div>
-                    <div>
-                      <p
-                        className={`font-bold text-[15px] leading-tight ${isDark ? "text-white" : "text-gray-900"}`}
-                      >
-                        {pos.nama}
-                      </p>
-                      <p
-                        className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
-                      >
-                        {pos.batas > 0 ? "Terkumpul" : "Total Pemasukan"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <span
-                      className={`px-2 py-1 rounded-lg text-[11px] font-bold border ${getScoreBadgeClass(getCategoryScore(pos.nama))}`}
-                      title="Skor kesehatan AI mingguan"
-                    >
-                      {getCategoryScore(pos.nama) === null
-                        ? "AI --"
-                        : `AI ${getCategoryScore(pos.nama)}`}
-                    </span>
-                    <button
-                      onClick={() => handleOpenAnalisa(pos)}
-                      className={`p-1.5 rounded-lg transition ${isDark ? "text-primary-adaptive hover:text-primary-strong-adaptive hover:bg-primary-surface-adaptive" : "text-primary-adaptive hover:text-primary-strong-adaptive hover:bg-primary-surface-adaptive"}`}
-                      title="Analisa AI"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleEdit(pos)}
-                      className={`p-1.5 rounded-lg transition ${isDark ? "text-gray-500 hover:text-green-400 hover:bg-green-900/30" : "text-gray-400 hover:text-green-600 hover:bg-green-50"}`}
-                      title="Edit kategori"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <p className="font-bold text-[26px] leading-none mb-4 text-green-500">
-                  Rp {formatRupiah(pos.terpakai)}
-                </p>
-
-                {pos.batas > 0 && (
-                  <>
-                    <div
-                      className={`w-full h-2.5 rounded-full overflow-hidden ${isDark ? "bg-gray-700" : pos.color.bar}`}
-                    >
+              <ScrollReveal key={i} delay={80 + i * 70} duration={560} y={16}>
+                <div
+                  className={`p-4 rounded-2xl shadow-sm border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
                       <div
-                        className="h-full rounded-full bg-green-500"
-                        style={{ width: `${pos.percentage}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between items-center mt-2">
-                      <p className="text-xs font-medium text-green-500">
-                        {pos.percentage}% Tercapai
-                      </p>
-                      <p
-                        className={`text-xs font-medium ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border ${isDark ? "bg-gray-700 border-gray-600" : `${pos.color.iconBg} ${pos.color.iconBorder}`}`}
                       >
-                        Target Rp {formatRupiah(pos.batas)}
-                      </p>
+                        {pos.ikon}
+                      </div>
+                      <div>
+                        <p
+                          className={`font-bold text-[15px] leading-tight ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
+                          {pos.nama}
+                        </p>
+                        <p
+                          className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                        >
+                          {pos.batas > 0 ? "Terkumpul" : "Total Pemasukan"}
+                        </p>
+                      </div>
                     </div>
-                  </>
-                )}
-              </div>
+
+                    <div className="flex items-start gap-2">
+                      <span
+                        className={`px-2 py-1 rounded-lg text-[11px] font-bold border ${getScoreBadgeClass(getCategoryScore(pos.nama))}`}
+                        title="Skor kesehatan AI mingguan"
+                      >
+                        {getCategoryScore(pos.nama) === null
+                          ? "AI --"
+                          : `AI ${getCategoryScore(pos.nama)}`}
+                      </span>
+                      <button
+                        onClick={() => handleOpenAnalisa(pos)}
+                        className={`p-1.5 rounded-lg transition ${isDark ? "text-primary-adaptive hover:text-primary-strong-adaptive hover:bg-primary-surface-adaptive" : "text-primary-adaptive hover:text-primary-strong-adaptive hover:bg-primary-surface-adaptive"}`}
+                        title="Analisa AI"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(pos)}
+                        className={`p-1.5 rounded-lg transition ${isDark ? "text-gray-500 hover:semantic-success-text hover:semantic-success-surface" : "text-gray-400 hover:semantic-success-text hover:semantic-success-surface"}`}
+                        title="Edit kategori"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="semantic-success-text font-bold text-[26px] leading-none mb-4">
+                    Rp {formatRupiah(pos.terpakai)}
+                  </p>
+
+                  {pos.batas > 0 && (
+                    <>
+                      <div
+                        className={`w-full h-2.5 rounded-full overflow-hidden ${isDark ? "bg-gray-700" : pos.color.bar}`}
+                      >
+                        <div
+                          className="semantic-success-fill h-full rounded-full"
+                          style={{ width: `${pos.percentage}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="semantic-success-text text-xs font-medium">
+                          {pos.percentage}% Tercapai
+                        </p>
+                        <p
+                          className={`text-xs font-medium ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                        >
+                          Target Rp {formatRupiah(pos.batas)}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </ScrollReveal>
             ))
           ) : (
             <p
@@ -494,23 +490,92 @@ export default function Anggaran({
         </div>
       </section>
 
-      <AnalisisKategori
-        isOpen={isAnalisaOpen}
-        onClose={() => setIsAnalisaOpen(false)}
-        category={selectedAnalisaKategori}
-        aiEnabled={aiEnabled}
-        onInsightSaved={(payload) => {
-          if (!payload?.categoryName) return;
-          setAiScoresByCategory((prev) => ({
-            ...prev,
-            [payload.categoryName]: {
-              score: Number(payload.score || 0),
-              source: payload.source || "RULE_BASED",
-              updatedAt: new Date().toISOString(),
-            },
-          }));
-        }}
-      />
+      <Suspense fallback={null}>
+        {isAnalisaOpen && (
+          <AnalisisKategori
+            isOpen={isAnalisaOpen}
+            onClose={() => setIsAnalisaOpen(false)}
+            category={selectedAnalisaKategori}
+            aiEnabled={aiEnabled}
+            onInsightSaved={(payload) => {
+              if (!payload?.categoryName) return;
+              setAiScoresByCategory((prev) => ({
+                ...prev,
+                [payload.categoryName]: {
+                  score: Number(payload.score || 0),
+                  source: payload.source || "RULE_BASED",
+                  updatedAt: new Date().toISOString(),
+                },
+              }));
+            }}
+          />
+        )}
+      </Suspense>
+    </div>
+  );
+}
+
+function AnggaranLoadingSkeleton({ isDark }) {
+  const surface = isDark
+    ? "bg-gray-800 border-gray-700"
+    : "bg-white border-gray-100";
+  const line = isDark ? "bg-white/10" : "bg-gray-200";
+  const lineSoft = isDark ? "bg-white/7" : "bg-gray-100";
+
+  return (
+    <div className="animate-fade-up">
+      <section className="px-4 mt-4">
+        <div className="relative rounded-2xl p-6 overflow-hidden skeleton-shimmer bg-gradient-to-br from-slate-900 via-teal-950 to-slate-950 border border-white/8">
+          <div className={`h-3 w-32 rounded-full ${lineSoft}`} />
+          <div className={`mt-3 h-10 w-44 rounded-2xl ${line}`} />
+          <div className={`mt-5 h-2 w-full rounded-full ${lineSoft}`} />
+          <div className={`mt-2 h-2 w-2/3 rounded-full ${line}`} />
+        </div>
+      </section>
+
+      <section className="px-4 mt-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className={`h-5 w-28 rounded-full ${line}`} />
+          <div className={`h-4 w-16 rounded-full ${lineSoft}`} />
+        </div>
+
+        <div
+          className={`p-1 rounded-xl flex gap-1 ${isDark ? "bg-gray-800" : "bg-gray-100"}`}
+        >
+          <div className={`h-9 flex-1 rounded-lg ${line}`} />
+          <div className={`h-9 flex-1 rounded-lg ${lineSoft}`} />
+        </div>
+
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className={`rounded-2xl border p-4 skeleton-shimmer ${surface}`}
+              style={{ "--skeleton-delay": `${index * 140}ms` }}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full ${line}`} />
+                  <div>
+                    <div className={`h-4 w-28 rounded-full ${line}`} />
+                    <div
+                      className={`mt-2 h-2.5 w-20 rounded-full ${lineSoft}`}
+                    />
+                  </div>
+                </div>
+                <div className={`h-6 w-14 rounded-lg ${lineSoft}`} />
+              </div>
+
+              <div className={`h-8 w-36 rounded-2xl ${line} mb-4`} />
+              <div className={`h-2.5 w-full rounded-full ${lineSoft}`} />
+              <div className="mt-2 flex justify-between">
+                <div className={`h-2.5 w-24 rounded-full ${line}`} />
+                <div className={`h-2.5 w-24 rounded-full ${lineSoft}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

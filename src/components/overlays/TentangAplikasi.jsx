@@ -31,16 +31,14 @@ const FEATURES = [
   {
     icon: BarChart2,
     label: "Laporan & analisis keuangan",
-    color: "text-emerald-500",
-    bg: "bg-emerald-50",
-    bgDark: "bg-emerald-900/30",
+    color: "semantic-success-text",
+    bg: "semantic-success-surface",
   },
   {
     icon: Zap,
     label: "Wawasan AI (Gemini)",
-    color: "text-amber-500",
-    bg: "bg-amber-50",
-    bgDark: "bg-amber-900/30",
+    color: "semantic-warning-text",
+    bg: "semantic-warning-surface",
   },
   {
     icon: Shield,
@@ -64,7 +62,7 @@ export default function TentangAplikasi({ isOpen, onClose }) {
   const divider = isDark ? "border-gray-700" : "border-gray-100";
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col">
+    <div className="fixed inset-0 z-[120] flex flex-col">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -82,7 +80,7 @@ export default function TentangAplikasi({ isOpen, onClose }) {
           </h2>
           <button
             onClick={onClose}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition ${isDark ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+            className="overlay-muted-button w-8 h-8 rounded-full flex items-center justify-center transition"
           >
             <X className="w-4 h-4" />
           </button>

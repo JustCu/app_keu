@@ -3,7 +3,7 @@ import { useTheme } from "../../context/ThemeContext";
 
 export default function Header({
   currentView,
-  familyName,
+  userName,
   onOpenNotifikasi,
   unreadCount = 0,
 }) {
@@ -14,7 +14,7 @@ export default function Header({
       case "beranda":
         return {
           subtitle: "Selamat datang,",
-          title: familyName || "Keluarga Anda",
+          title: userName || "Pengguna",
         };
       case "laporan":
         return { subtitle: "Analisis Keuangan", title: "Laporan Anda" };

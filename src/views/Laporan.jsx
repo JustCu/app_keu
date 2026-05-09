@@ -1,36 +1,14 @@
-﻿import { useState, useMemo, useEffect } from "react";
-import { Sparkles } from "lucide-react";
-import { Bar, Doughnut } from "react-chartjs-2";
-import { fetchAIInsights } from "../services/api";
+import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from "chart.js";
+import ScrollReveal from "../components/common/ScrollReveal";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
+const LaporanCharts = lazy(() => import("../components/reports/LaporanCharts"));
+const LaporanAIInsights = lazy(
+  () => import("../components/reports/LaporanAIInsights"),
 );
 
 const formatRupiah = (angka) => new Intl.NumberFormat("id-ID").format(angka);
-const formatRupiahPendek = (angka) => {
-  if (angka >= 1000000) return (angka / 1000000).toFixed(1) + "jt";
-  if (angka >= 1000) return (angka / 1000).toFixed(0) + "rb";
-  return angka;
-};
 
 const getPeriodTitle = (filter) => {
   const now = new Date();
@@ -74,10 +52,6 @@ export default function Laporan({
   const [filter, setFilter] = useState("semua");
 
   const [aiEnabled, setAiEnabled] = useState(true);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiData, setAiData] = useState(null);
-  const [aiError, setAiError] = useState(null);
-  const [aiCache, setAiCache] = useState({});
 
   useEffect(() => {
     const isAI = localStorage.getItem("integrasiAI") !== "false";
@@ -92,6 +66,14 @@ export default function Laporan({
     filteredTransaksi,
     periodTitle,
   } = useMemo(() => {
+    const totalSaldoGlobal = transaksi.reduce((acc, trx) => {
+      const nominalRaw = String(trx.Nominal || "").replace(/[^0-9]/g, "");
+      const nominal = parseInt(nominalRaw, 10) || 0;
+      if (trx.Tipe === "pemasukan") return acc + nominal;
+      if (trx.Tipe === "pengeluaran") return acc - nominal;
+      return acc;
+    }, 0);
+
     let masuk = 0;
     let keluar = 0;
     const posMap = {};
@@ -211,10 +193,33 @@ export default function Laporan({
       }
     });
 
+    let runningSaldo = 0;
+    const saldoRawSeries = labels.map((l) => {
+      const delta = barDataMap[l].m - barDataMap[l].k;
+      if (filter === "semua") {
+        runningSaldo += delta;
+        return runningSaldo;
+      }
+      return delta;
+    });
+
+    // Keep monthly trend shape, but anchor the last point to actual total saldo.
+    const adjustedSaldoSeries =
+      filter === "semua"
+        ? saldoRawSeries.length > 0
+          ? (() => {
+              const latestRaw = saldoRawSeries[saldoRawSeries.length - 1] || 0;
+              const offset = totalSaldoGlobal - latestRaw;
+              return saldoRawSeries.map((v) => v + offset);
+            })()
+          : saldoRawSeries
+        : labels.map(() => totalSaldoGlobal);
+
     const computedBarData = {
       labels,
       masuk: labels.map((l) => barDataMap[l].m),
       keluar: labels.map((l) => barDataMap[l].k),
+      saldo: adjustedSaldoSeries,
     };
 
     const sortedPos = Object.entries(posMap).sort((a, b) => b[1] - a[1]);
@@ -229,325 +234,123 @@ export default function Laporan({
     };
   }, [transaksi, filter]);
 
-  const dataSignature = useMemo(() => {
-    return filteredTransaksi
-      .map(
-        (trx) =>
-          `${trx.ID || ""}-${trx.Tanggal || ""}-${trx.Tipe || ""}-${trx.Nominal || ""}-${trx["Pos Anggaran"] || ""}`,
-      )
-      .join("|");
-  }, [filteredTransaksi]);
-
-  const insightCacheKey = `${filter}::${dataSignature}`;
-
-  const loadInsights = async (force = false) => {
-    if (!force && aiCache[insightCacheKey]) {
-      const cached = aiCache[insightCacheKey];
-      setAiData(cached.data || null);
-      setAiError(cached.error || null);
-      return;
-    }
-
-    setAiLoading(true);
-    setAiError(null);
-    const res = await fetchAIInsights(user?.familyId || null, {
-      period: filter,
-    });
-    setAiLoading(false);
-
-    if (res.success) {
-      setAiData(res.data);
-      setAiCache((prev) => ({
-        ...prev,
-        [insightCacheKey]: { data: res.data, error: null },
-      }));
-    } else {
-      const msg =
-        res.error === "API_KEY_MISSING"
-          ? "Gemini API Key belum dikonfigurasi di Google Apps Script (Backend)."
-          : `Gagal memuat insight: ${res.error}`;
-      setAiError(msg);
-      setAiCache((prev) => ({
-        ...prev,
-        [insightCacheKey]: { data: null, error: msg },
-      }));
-    }
-  };
-
-  useEffect(() => {
-    if (!isActive || !aiEnabled || !user?.familyId) return;
-
-    if (aiCache[insightCacheKey]) {
-      const cached = aiCache[insightCacheKey];
-      setAiData(cached.data || null);
-      setAiError(cached.error || null);
-      return;
-    }
-
-    loadInsights(false);
-  }, [isActive, aiEnabled, user?.familyId, insightCacheKey]);
-
   if (isLoading) {
-    return <p className="text-center mt-10 text-gray-500">Memuat laporan...</p>;
+    return <LaporanLoadingSkeleton isDark={isDark} />;
   }
-
-  const barChartData = {
-    labels: barData.labels,
-    datasets: [
-      {
-        label: "Masuk",
-        data: barData.masuk,
-        backgroundColor: "#10B981",
-        borderRadius: 4,
-        barPercentage: 0.6,
-        categoryPercentage: 0.8,
-      },
-      {
-        label: "Keluar",
-        data: barData.keluar,
-        backgroundColor: "#EF4444",
-        borderRadius: 4,
-        barPercentage: 0.6,
-        categoryPercentage: 0.8,
-      },
-    ],
-  };
-
-  const donutColors = ["#14B8A6", "#6366F1", "#EAB308", "#EF4444", "#10B981"];
-  const donutChartData = {
-    labels: pengeluaranPerPos.map((p) => p[0]),
-    datasets: [
-      {
-        data: pengeluaranPerPos.map((p) => p[1]),
-        backgroundColor: donutColors.slice(0, pengeluaranPerPos.length),
-        borderWidth: 3,
-        borderColor: isDark ? "#111827" : "#ffffff",
-        hoverOffset: 4,
-      },
-    ],
-  };
-
-  const labelColor = isDark ? "#9ca3af" : "#374151";
-
-  const barOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "bottom",
-        labels: {
-          usePointStyle: true,
-          boxWidth: 8,
-          padding: 20,
-          color: labelColor,
-        },
-      },
-    },
-    scales: {
-      y: { display: false, beginAtZero: true },
-      x: { grid: { display: false }, ticks: { color: labelColor } },
-    },
-  };
-
-  const donutOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: "75%",
-    plugins: { legend: { display: false } },
-  };
 
   return (
     <div>
+      <ScrollReveal delay={30} duration={560}>
+        <div className="px-4 mt-4">
+          <div
+            className={`p-1 rounded-xl flex gap-1 overflow-x-auto no-scrollbar ${isDark ? "bg-gray-800" : "bg-gray-200/60"}`}
+          >
+            {["Hari Ini", "Mingguan", "Bulanan", "Semua"].map((f) => {
+              const key = f.toLowerCase().replace(" ", "");
+              const isSelected =
+                filter === key || (f === "Hari Ini" && filter === "harian");
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFilter(key)}
+                  className={`filter-btn flex-1 min-w-[70px] text-sm py-2 transition-all ${isSelected ? `font-bold rounded-lg shadow-sm ${isDark ? "bg-gray-700 text-white" : "bg-white text-gray-900"}` : `font-medium ${isDark ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-900"}`}`}
+                >
+                  {f}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </ScrollReveal>
+
+      <Suspense fallback={null}>
+        <ScrollReveal delay={90} duration={620} y={18}>
+          <LaporanCharts
+            isDark={isDark}
+            filter={filter}
+            periodTitle={periodTitle}
+            totalMasuk={totalMasuk}
+            totalKeluar={totalKeluar}
+            barData={barData}
+            pengeluaranPerPos={pengeluaranPerPos}
+          />
+        </ScrollReveal>
+        <ScrollReveal delay={150} duration={620} y={18}>
+          <LaporanAIInsights
+            isDark={isDark}
+            isActive={isActive}
+            aiEnabled={aiEnabled}
+            familyId={user?.familyId}
+            filter={filter}
+            periodTitle={periodTitle}
+            filteredTransaksi={filteredTransaksi}
+            totalMasuk={totalMasuk}
+            totalKeluar={totalKeluar}
+            pengeluaranPerPos={pengeluaranPerPos}
+          />
+        </ScrollReveal>
+      </Suspense>
+    </div>
+  );
+}
+
+function LaporanLoadingSkeleton({ isDark }) {
+  const line = isDark ? "bg-white/10" : "bg-gray-200";
+  const lineSoft = isDark ? "bg-white/7" : "bg-gray-100";
+  const panel = isDark
+    ? "bg-gray-800 border-gray-700"
+    : "bg-white border-gray-100";
+
+  return (
+    <div className="animate-fade-up">
       <div className="px-4 mt-4">
         <div
-          className={`p-1 rounded-xl flex gap-1 overflow-x-auto no-scrollbar ${isDark ? "bg-gray-800" : "bg-gray-200/60"}`}
+          className={`p-1 rounded-xl flex gap-1 ${isDark ? "bg-gray-800" : "bg-gray-200/60"}`}
         >
-          {["Hari Ini", "Mingguan", "Bulanan", "Semua"].map((f) => {
-            const key = f.toLowerCase().replace(" ", "");
-            const isSelected =
-              filter === key || (f === "Hari Ini" && filter === "harian");
-            return (
-              <button
-                key={f}
-                onClick={() => setFilter(key)}
-                className={`filter-btn flex-1 min-w-[70px] text-sm py-2 transition-all ${isSelected ? `font-bold rounded-lg shadow-sm ${isDark ? "bg-gray-700 text-white" : "bg-white text-gray-900"}` : `font-medium ${isDark ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-900"}`}`}
-              >
-                {f}
-              </button>
-            );
-          })}
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              className={`h-9 flex-1 rounded-lg ${index === 3 ? line : lineSoft}`}
+            />
+          ))}
         </div>
       </div>
 
-      <section className="px-4 mt-6">
-        <h2
-          className={`text-sm font-bold uppercase tracking-wider mb-3 ${isDark ? "text-gray-400" : "text-gray-500"}`}
-        >
-          {periodTitle}
-        </h2>
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <p
-              className={`text-xs font-medium mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
-            >
-              Total Pemasukan
-            </p>
-            <p className="text-lg font-bold text-green-500">
-              Rp {formatRupiah(totalMasuk)}
-            </p>
+      <div className="px-4 mt-4 space-y-4">
+        <div className={`rounded-2xl border p-5 skeleton-shimmer ${panel}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className={`h-4 w-32 rounded-full ${line}`} />
+            <div className={`h-3 w-20 rounded-full ${lineSoft}`} />
           </div>
-          <div
-            className={`w-[1px] ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
-          ></div>
-          <div className="flex-1">
-            <p
-              className={`text-xs font-medium mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
-            >
-              Total Pengeluaran
-            </p>
-            <p className="text-lg font-bold text-red-500">
-              Rp {formatRupiah(totalKeluar)}
-            </p>
+          <div className={`h-48 w-full rounded-2xl ${lineSoft}`} />
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className={`h-16 rounded-xl ${line}`}
+                style={{ opacity: 0.7 + index * 0.1 }}
+              />
+            ))}
           </div>
         </div>
-      </section>
 
-      <section className="px-4 mt-6">
         <div
-          className={`p-4 rounded-2xl shadow-sm border relative overflow-hidden ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}
+          className={`rounded-2xl border p-5 skeleton-shimmer ${panel}`}
+          style={{ "--skeleton-delay": "140ms" }}
         >
-          <div className="relative w-full h-56">
-            <Bar data={barChartData} options={barOptions} />
+          <div className={`h-4 w-28 rounded-full ${line}`} />
+          <div className={`mt-3 h-3 w-2/3 rounded-full ${lineSoft}`} />
+          <div className="mt-5 space-y-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className={`h-3 rounded-full ${line}`}
+                style={{ width: `${92 - index * 16}%` }}
+              />
+            ))}
           </div>
         </div>
-      </section>
-
-      <section className="px-4 mt-8">
-        <h2
-          className={`text-base font-bold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}
-        >
-          Pengeluaran per Pos Anggaran
-        </h2>
-        <div
-          className={`p-4 rounded-2xl shadow-sm border mb-5 flex flex-col ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}
-        >
-          {pengeluaranPerPos.length > 0 ? (
-            <>
-              <div className="relative w-full h-48 flex justify-center items-center mb-6">
-                <Doughnut data={donutChartData} options={donutOptions} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
-                  <p
-                    className={`text-[10px] font-bold uppercase tracking-widest mt-2 ${isDark ? "text-gray-500" : "text-gray-400"}`}
-                  >
-                    Total
-                  </p>
-                  <p
-                    className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                  >
-                    Rp {formatRupiahPendek(totalKeluar)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                {pengeluaranPerPos.map(([pos, amount], idx) => {
-                  const percentage = Math.round((amount / totalKeluar) * 100);
-                  const color = donutColors[idx % donutColors.length];
-                  return (
-                    <div key={pos}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="w-3 h-3 rounded-full shadow-sm"
-                            style={{ backgroundColor: color }}
-                          ></span>
-                          <p
-                            className={`text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"}`}
-                          >
-                            {pos}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p
-                            className={`text-sm font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                          >
-                            Rp {formatRupiahPendek(amount)}
-                          </p>
-                          <p
-                            className={`text-[10px] font-bold ${isDark ? "text-gray-500" : "text-gray-400"}`}
-                          >
-                            {percentage}%
-                          </p>
-                        </div>
-                      </div>
-                      {idx < pengeluaranPerPos.length - 1 && (
-                        <hr
-                          className={`mt-3 ${isDark ? "border-gray-700" : "border-gray-50"}`}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <p
-              className={`text-center text-sm py-6 ${isDark ? "text-gray-400" : "text-gray-500"}`}
-            >
-              Belum ada data pengeluaran.
-            </p>
-          )}
-        </div>
-      </section>
-
-      {aiEnabled && (
-        <section className="px-4 mt-8 pb-6">
-          <div
-            className={`rounded-2xl p-5 border shadow-sm relative overflow-hidden ${isDark ? "bg-gradient-to-r from-teal-900/40 to-fuchsia-900/30 border-teal-800" : "bg-gradient-to-r from-teal-50 to-fuchsia-50 border-teal-100"}`}
-          >
-            <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-50 -mr-10 -mt-10 pointer-events-none bg-primary-surface-strong-adaptive"></div>
-
-            <div className="flex items-center justify-between mb-3 relative z-10">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-primary-adaptive bg-primary-surface-strong-adaptive">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <h3 className="font-bold text-sm text-primary-strong-adaptive">
-                  Insight AI • {periodTitle}
-                </h3>
-              </div>
-              {!aiLoading && (
-                <button
-                  onClick={() => loadInsights(true)}
-                  className={`text-xs font-bold transition px-3 py-1.5 rounded-lg active:scale-95 bg-primary-soft-adaptive text-primary-adaptive ${isDark ? "hover:bg-primary-surface-strong-adaptive" : "hover:text-primary-strong-adaptive"}`}
-                >
-                  Perbarui
-                </button>
-              )}
-            </div>
-
-            <div className="relative z-10">
-              {aiLoading ? (
-                <div className="flex flex-col gap-2 animate-pulse mt-2">
-                  <div className="h-3 bg-primary-surface-muted-adaptive rounded-full w-full"></div>
-                  <div className="h-3 bg-primary-surface-muted-adaptive rounded-full w-5/6"></div>
-                  <div className="h-3 bg-primary-surface-muted-adaptive rounded-full w-4/6"></div>
-                </div>
-              ) : aiError ? (
-                <p className="text-sm text-red-400 font-medium">{aiError}</p>
-              ) : aiData ? (
-                <p className="text-sm leading-relaxed whitespace-pre-line text-primary-strong-adaptive">
-                  {aiData}
-                </p>
-              ) : (
-                <p className="text-sm text-primary-soft-adaptive">
-                  Menyiapkan insight untuk periode ini...
-                </p>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
+      </div>
     </div>
   );
 }

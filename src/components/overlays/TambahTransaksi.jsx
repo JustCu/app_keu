@@ -85,7 +85,7 @@ export default function TambahTransaksi({
         <h2 className="text-lg font-bold">Tambah Transaksi</h2>
         <button
           onClick={onClose}
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition ${isDark ? "bg-gray-800 text-gray-300 hover:bg-gray-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+          className="overlay-muted-button w-8 h-8 rounded-full flex items-center justify-center transition"
           disabled={isSubmitting}
         >
           <X className="w-5 h-5" />
@@ -156,7 +156,7 @@ export default function TambahTransaksi({
               <select
                 value={posAnggaran}
                 onChange={(e) => setPosAnggaran(e.target.value)}
-                className={`w-full appearance-none border font-medium rounded-xl p-4 pr-10 outline-none focus:ring-2 focus-primary-theme transition ${isDark ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+                className="overlay-control w-full appearance-none font-medium rounded-xl p-4 pr-10 focus:ring-2"
               >
                 <option value="" disabled>
                   Pilih Kategori...
@@ -191,7 +191,7 @@ export default function TambahTransaksi({
               type="date"
               value={tanggal}
               onChange={(e) => setTanggal(e.target.value)}
-              className={`w-full border font-medium rounded-xl p-4 outline-none focus:ring-2 focus-primary-theme transition ${isDark ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+              className="overlay-control w-full font-medium rounded-xl p-4 focus:ring-2"
             />
           </div>
 
@@ -206,7 +206,7 @@ export default function TambahTransaksi({
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
               placeholder="Mis: Beli pampers ukuran L promo"
-              className={`w-full border font-medium rounded-xl p-4 outline-none focus:ring-2 focus-primary-theme transition ${isDark ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+              className="overlay-control w-full font-medium rounded-xl p-4 focus:ring-2"
             />
           </div>
         </div>

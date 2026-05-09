@@ -104,7 +104,7 @@ export default function TambahAnggaran({
         </h2>
         <button
           onClick={onClose}
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition ${isDark ? "bg-gray-800 text-gray-300 hover:bg-gray-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+          className="overlay-muted-button w-8 h-8 rounded-full flex items-center justify-center transition"
           disabled={isSubmitting}
         >
           <X className="w-5 h-5" />
@@ -149,7 +149,7 @@ export default function TambahAnggaran({
               value={nama}
               onChange={(e) => setNama(e.target.value)}
               placeholder={`Mis: ${tipe === "pengeluaran" ? "Kebutuhan Pokok" : "Gaji Utama"}`}
-              className={`w-full border font-medium rounded-xl p-4 outline-none focus:ring-2 focus-primary-theme transition ${isDark ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+              className="overlay-control w-full font-medium rounded-xl p-4 focus:ring-2"
             />
           </div>
 
@@ -167,7 +167,7 @@ export default function TambahAnggaran({
               value={batas}
               onChange={handleBatasChange}
               placeholder="0"
-              className={`w-full border font-medium rounded-xl p-4 outline-none focus:ring-2 focus-primary-theme transition ${isDark ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+              className="overlay-control w-full font-medium rounded-xl p-4 focus:ring-2"
             />
           </div>
 
@@ -189,7 +189,7 @@ export default function TambahAnggaran({
                 onChange={(e) => setIkon(e.target.value)}
                 placeholder="Ketik/Pilih emoji..."
                 maxLength={2}
-                className={`w-full border font-medium rounded-xl p-4 outline-none focus:ring-2 focus-primary-theme transition ${isDark ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+                className="overlay-control w-full font-medium rounded-xl p-4 focus:ring-2"
               />
             </div>
 

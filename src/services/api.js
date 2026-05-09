@@ -353,6 +353,38 @@ export async function addTransaksi(data) {
 }
 
 /**
+ * Edit transaksi di Google Sheets
+ */
+export async function apiEditTransaksi(data) {
+  try {
+    const result = await post("editTransaksi", data);
+    if (result.status === "success") {
+      return { success: true, data: result.data || null };
+    }
+    throw new Error(result.message);
+  } catch (error) {
+    console.error("Error editing transaksi:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Hapus transaksi di Google Sheets
+ */
+export async function apiDeleteTransaksi(data) {
+  try {
+    const result = await post("deleteTransaksi", data);
+    if (result.status === "success") {
+      return { success: true, data: result.data || null };
+    }
+    throw new Error(result.message);
+  } catch (error) {
+    console.error("Error deleting transaksi:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Tambah pos anggaran baru ke Google Sheets
  */
 export async function addAnggaran(data) {
@@ -411,6 +443,9 @@ export async function fetchAIInsights(
       : `${GAS_WEB_APP_URL}?action=getAIInsights`;
     const payload = {
       period: options?.period || "bulanan",
+      detailLevel: options?.detailLevel || "standard",
+      focusAreas: Array.isArray(options?.focusAreas) ? options.focusAreas : [],
+      summaryData: options?.summaryData || null,
     };
     const response = await fetch(url, {
       method: "POST",

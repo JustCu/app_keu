@@ -103,6 +103,46 @@ function getSettingsRowIndex(rows, userId, familyId) {
   return -1;
 }
 
+function normalizeTimeHHmm(value, fallback) {
+  const defaultTime = fallback || "20:00";
+  if (value === null || value === undefined || value === "") {
+    return defaultTime;
+  }
+
+  if (Object.prototype.toString.call(value) === "[object Date]") {
+    if (isNaN(value.getTime())) return defaultTime;
+    return Utilities.formatDate(value, "Asia/Jakarta", "HH:mm");
+  }
+
+  if (typeof value === "number" && isFinite(value)) {
+    const totalMinutes = Math.round((value % 1) * 24 * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    const hh = String(Math.max(0, Math.min(h, 23))).padStart(2, "0");
+    const mm = String(Math.max(0, Math.min(m, 59))).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+
+  const raw = String(value).trim();
+  if (!raw) return defaultTime;
+
+  const hm = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (hm) {
+    const h = Number(hm[1]);
+    const m = Number(hm[2]);
+    if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+  }
+
+  const parsed = new Date(raw);
+  if (!isNaN(parsed.getTime())) {
+    return Utilities.formatDate(parsed, "Asia/Jakarta", "HH:mm");
+  }
+
+  return defaultTime;
+}
+
 function getNotificationReadRowIndex(rows, userId, familyId) {
   for (let i = 1; i < rows.length; i++) {
     if (rows[i][1] === userId && rows[i][2] === familyId) return i + 1;
@@ -501,7 +541,7 @@ function handleRequest(e, isPost) {
         output.data = row
           ? {
               dailyReminderEnabled: toBoolean(row[3]),
-              dailyReminderTime: String(row[4] || "20:00").trim(),
+              dailyReminderTime: normalizeTimeHHmm(row[4], "20:00"),
               weeklyReportEnabled: toBoolean(row[5]),
               weeklyReportEmail: String(row[6] || user.email || "").trim(),
             }
@@ -546,7 +586,7 @@ function handleRequest(e, isPost) {
         const updatedAt = new Date().toISOString();
         const dailyEnabled =
           p.dailyReminderEnabled === true || p.dailyReminderEnabled === "true";
-        const dailyTime = String(p.dailyReminderTime || "20:00").trim();
+        const dailyTime = normalizeTimeHHmm(p.dailyReminderTime, "20:00");
         const weeklyEnabled =
           p.weeklyReportEnabled === true || p.weeklyReportEnabled === "true";
         const weeklyEmail = String(
@@ -1403,6 +1443,102 @@ function handleRequest(e, isPost) {
         output.data = { id };
         output.message = "Transaksi berhasil ditambahkan";
       }
+    } else if (action === "editTransaksi" && isPost) {
+      const p = JSON.parse(e.postData.contents);
+      const ss = getSpreadsheet();
+      const user = p.editedById
+        ? getUserById(
+            ss.getSheetByName("Users").getDataRange().getValues(),
+            p.editedById,
+          )
+        : null;
+      if (!p.id || !p.familyId || !p.editedById || !user) {
+        output.status = "error";
+        output.message = "UNAUTHORIZED_WRITE";
+      } else {
+        const sheet = ss.getSheetByName("Transaksi");
+        const data = sheet.getDataRange().getValues();
+        let ri = -1;
+        for (let i = 1; i < data.length; i++) {
+          if (data[i][0] === p.id) {
+            ri = i + 1;
+            break;
+          }
+        }
+
+        if (ri === -1) {
+          output.status = "error";
+          output.message = "ID tidak ditemukan";
+        } else {
+          const targetFamilyId = data[ri - 1][6] || "";
+          if (
+            !targetFamilyId ||
+            user.familyId !== targetFamilyId ||
+            targetFamilyId !== p.familyId
+          ) {
+            output.status = "error";
+            output.message = "UNAUTHORIZED_WRITE";
+          } else if (!isFamilyMember(ss, user.id, targetFamilyId)) {
+            output.status = "error";
+            output.message = "UNAUTHORIZED_WRITE";
+          } else {
+            sheet.getRange(ri, 2).setValue(p.tanggal || "");
+            sheet.getRange(ri, 3).setValue(p.tipe || "pengeluaran");
+            sheet.getRange(ri, 4).setValue(p.pos_anggaran || "");
+            sheet.getRange(ri, 5).setValue(p.nominal || "0");
+            sheet.getRange(ri, 6).setValue(p.catatan || "");
+            sheet.getRange(ri, 10).setValue(new Date().toISOString());
+
+            output.data = { id: p.id };
+            output.message = "Transaksi diperbarui";
+          }
+        }
+      }
+    } else if (action === "deleteTransaksi" && isPost) {
+      const p = JSON.parse(e.postData.contents);
+      const ss = getSpreadsheet();
+      const user = p.deletedById
+        ? getUserById(
+            ss.getSheetByName("Users").getDataRange().getValues(),
+            p.deletedById,
+          )
+        : null;
+      if (!p.id || !p.familyId || !p.deletedById || !user) {
+        output.status = "error";
+        output.message = "UNAUTHORIZED_WRITE";
+      } else {
+        const sheet = ss.getSheetByName("Transaksi");
+        const data = sheet.getDataRange().getValues();
+        let ri = -1;
+        for (let i = 1; i < data.length; i++) {
+          if (data[i][0] === p.id) {
+            ri = i + 1;
+            break;
+          }
+        }
+
+        if (ri === -1) {
+          output.status = "error";
+          output.message = "ID tidak ditemukan";
+        } else {
+          const targetFamilyId = data[ri - 1][6] || "";
+          if (
+            !targetFamilyId ||
+            user.familyId !== targetFamilyId ||
+            targetFamilyId !== p.familyId
+          ) {
+            output.status = "error";
+            output.message = "UNAUTHORIZED_WRITE";
+          } else if (!isFamilyMember(ss, user.id, targetFamilyId)) {
+            output.status = "error";
+            output.message = "UNAUTHORIZED_WRITE";
+          } else {
+            sheet.deleteRow(ri);
+            output.data = { id: p.id };
+            output.message = "Transaksi dihapus";
+          }
+        }
+      }
     } else if (action === "addAnggaran" && isPost) {
       const p = JSON.parse(e.postData.contents);
       const ss = getSpreadsheet();
@@ -1492,6 +1628,15 @@ function handleRequest(e, isPost) {
       const period = String(
         reqBody.period || e.parameter.period || "bulanan",
       ).toLowerCase();
+      const detailLevel = String(
+        reqBody.detailLevel || "standard",
+      ).toLowerCase();
+      const focusAreas = Array.isArray(reqBody.focusAreas)
+        ? reqBody.focusAreas
+            .map((v) => String(v || "").toLowerCase())
+            .filter((v) => v)
+        : ["pemasukan", "pengeluaran", "budgeting"];
+      const summaryData = reqBody.summaryData || {};
       const transaksi = getFilteredData("Transaksi", familyId, 6);
 
       // Get AI config from sheet or fallback to script properties
@@ -1572,7 +1717,55 @@ function handleRequest(e, isPost) {
         const rincian = Object.entries(perPos)
           .map(([k, v]) => `- ${k}: Rp ${v}`)
           .join("\n");
-        const prompt = `Ringkasan keuangan periode ${periodLabel}:\nJumlah transaksi: ${totalTransaksi}\nPemasukan: Rp ${masuk}\nPengeluaran: Rp ${keluar}\n${rincian || "- (Belum ada pengeluaran per pos)"}\n\nBerikan 1 paragraf analisis dan 2 saran penghematan. Gaya bahasa ramah, profesional, to the point. Jika data minim, tetap berikan saran praktis yang relevan.`;
+        const topFromClient = Array.isArray(summaryData.topSpendingCategories)
+          ? summaryData.topSpendingCategories
+              .map((it) => {
+                const name = String(it && it.name ? it.name : "-");
+                const amount = Number(it && it.amount ? it.amount : 0);
+                return `- ${name}: Rp ${amount}`;
+              })
+              .join("\n")
+          : "";
+        const summaryBlock =
+          `Ringkasan klien (opsional):\n` +
+          `- Judul periode: ${String(summaryData.periodTitle || periodLabel)}\n` +
+          `- Total pemasukan: Rp ${Number(summaryData.totalMasuk || masuk)}\n` +
+          `- Total pengeluaran: Rp ${Number(summaryData.totalKeluar || keluar)}\n` +
+          `- Selisih kas: Rp ${Number(summaryData.netCashflow || masuk - keluar)}\n` +
+          `- Jumlah transaksi: ${Number(summaryData.transactionCount || totalTransaksi)}\n` +
+          `- Top pos pengeluaran dari klien:\n${topFromClient || "- (tidak ada)"}`;
+
+        const focusLabel =
+          focusAreas.length > 0
+            ? focusAreas.join(", ")
+            : "pemasukan, pengeluaran, budgeting";
+        const prompt =
+          `Kamu adalah analis keuangan keluarga senior. Buat insight dalam Bahasa Indonesia yang praktis, jujur, dan to the point.\n` +
+          `Fokus analisis: ${focusLabel}.\n` +
+          `Periode: ${periodLabel}.\n\n` +
+          `Data utama backend:\n` +
+          `- Jumlah transaksi: ${totalTransaksi}\n` +
+          `- Pemasukan: Rp ${masuk}\n` +
+          `- Pengeluaran: Rp ${keluar}\n` +
+          `${rincian || "- (Belum ada pengeluaran per pos)"}\n\n` +
+          `${summaryBlock}\n\n` +
+          `Format keluaran WAJIB rapi dengan heading berikut:\n` +
+          `1) OVERVIEW\n` +
+          `2) ANALISIS PEMASUKAN\n` +
+          `3) ANALISIS PENGELUARAN\n` +
+          `4) ANALISIS BUDGETING\n` +
+          `5) PRIORITAS 30 HARI\n\n` +
+          `Aturan isi:\n` +
+          `- OVERVIEW: 3 poin utama kondisi finansial periode ini.\n` +
+          `- ANALISIS PEMASUKAN: stabilitas pemasukan, risiko, peluang peningkatan.\n` +
+          `- ANALISIS PENGELUARAN: pos dominan, pola boros/efisien, anomali.\n` +
+          `- ANALISIS BUDGETING: evaluasi rasio saldo, kecukupan batas anggaran, rekomendasi alokasi.\n` +
+          `- PRIORITAS 30 HARI: 3 aksi paling berdampak, tiap aksi wajib punya target angka sederhana.\n` +
+          `- Jika data minim, tulis asumsi singkat lalu tetap beri rekomendasi yang aman.\n` +
+          `- Gunakan bullet dan angka rupiah yang jelas.\n` +
+          (detailLevel === "deep"
+            ? `- Kedalaman analisis: medium-deep (6-12 bullet total lintas section).`
+            : `- Kedalaman analisis: ringkas.`);
 
         let resp,
           json,
@@ -1590,6 +1783,27 @@ function handleRequest(e, isPost) {
               muteHttpExceptions: true,
               payload: JSON.stringify({
                 model: "gpt-3.5-turbo",
+                messages: [{ role: "user", content: prompt }],
+              }),
+            },
+          );
+          json = JSON.parse(resp.getContentText());
+          if (resp.getResponseCode() === 200 && json.choices?.length > 0) {
+            output.data = json.choices[0].message.content;
+            success = true;
+          }
+        } else if (provider === "deepseek") {
+          resp = UrlFetchApp.fetch(
+            "https://api.deepseek.com/v1/chat/completions",
+            {
+              method: "post",
+              contentType: "application/json",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+              },
+              muteHttpExceptions: true,
+              payload: JSON.stringify({
+                model: "deepseek-chat",
                 messages: [{ role: "user", content: prompt }],
               }),
             },
@@ -1886,7 +2100,12 @@ function handleRequest(e, isPost) {
             json,
             success = false,
             modelText = "";
-          const sourceLabel = provider === "openai" ? "OPENAI" : "GEMINI";
+          const sourceLabel =
+            provider === "openai"
+              ? "OPENAI"
+              : provider === "deepseek"
+                ? "DEEPSEEK"
+                : "GEMINI";
 
           if (provider === "openai") {
             resp = UrlFetchApp.fetch(
@@ -1900,6 +2119,27 @@ function handleRequest(e, isPost) {
                 muteHttpExceptions: true,
                 payload: JSON.stringify({
                   model: "gpt-3.5-turbo",
+                  messages: [{ role: "user", content: prompt }],
+                }),
+              },
+            );
+            json = parseJSONSafe(resp.getContentText(), {});
+            if (resp.getResponseCode() === 200 && json.choices?.length > 0) {
+              modelText = json.choices[0].message.content || "";
+              success = true;
+            }
+          } else if (provider === "deepseek") {
+            resp = UrlFetchApp.fetch(
+              "https://api.deepseek.com/v1/chat/completions",
+              {
+                method: "post",
+                contentType: "application/json",
+                headers: {
+                  Authorization: `Bearer ${actualApiKey}`,
+                },
+                muteHttpExceptions: true,
+                payload: JSON.stringify({
+                  model: "deepseek-chat",
                   messages: [{ role: "user", content: prompt }],
                 }),
               },
@@ -2105,9 +2345,9 @@ function handleRequest(e, isPost) {
       if (!familyId || !provider || !apiKey) {
         output.status = "error";
         output.message = "familyId, provider, dan apiKey required";
-      } else if (!["gemini", "openai"].includes(provider)) {
+      } else if (!["gemini", "openai", "deepseek"].includes(provider)) {
         output.status = "error";
-        output.message = "provider harus 'gemini' atau 'openai'";
+        output.message = "provider harus 'gemini', 'openai', atau 'deepseek'";
       } else {
         let testSuccess = false;
         let testError = "";
@@ -2150,6 +2390,29 @@ function handleRequest(e, isPost) {
             testSuccess = true;
           } else {
             testError = testJson.error?.message || "OpenAI API error";
+          }
+        } else if (provider === "deepseek") {
+          const testResp = UrlFetchApp.fetch(
+            "https://api.deepseek.com/v1/chat/completions",
+            {
+              method: "post",
+              contentType: "application/json",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+              },
+              muteHttpExceptions: true,
+              payload: JSON.stringify({
+                model: "deepseek-chat",
+                messages: [{ role: "user", content: "Test koneksi." }],
+                max_tokens: 10,
+              }),
+            },
+          );
+          const testJson = JSON.parse(testResp.getContentText());
+          if (testResp.getResponseCode() === 200) {
+            testSuccess = true;
+          } else {
+            testError = testJson.error?.message || "DeepSeek API error";
           }
         }
 
@@ -2260,7 +2523,7 @@ function sendDailyReminderEmails() {
     const dailyEnabled = row[3] === true || row[3] === "TRUE";
     if (!dailyEnabled) return;
     const userId = row[1];
-    const reminderTime = String(row[4] || "20:00");
+    const reminderTime = normalizeTimeHHmm(row[4], "20:00");
     const [rHour, rMin] = reminderTime.split(":").map(Number);
     // Only send if within the same hour and within first 10 minutes of trigger
     if (currentHour !== rHour) return;

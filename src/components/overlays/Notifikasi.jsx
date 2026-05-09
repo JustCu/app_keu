@@ -24,6 +24,8 @@ export default function Notifikasi({
 
   if (!isOpen) return null;
 
+  const subtleButtonClass = "overlay-subtle-button";
+
   const iconConfig = {
     insight: {
       bg: isDark ? "bg-yellow-900/40" : "bg-yellow-50",
@@ -55,7 +57,7 @@ export default function Notifikasi({
       >
         <button
           onClick={onClose}
-          className={`w-8 h-8 -ml-2 rounded-full flex items-center justify-center transition ${isDark ? "text-gray-300 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-100"}`}
+          className={`w-8 h-8 -ml-2 rounded-full flex items-center justify-center transition ${subtleButtonClass}`}
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
@@ -75,72 +77,74 @@ export default function Notifikasi({
       {/* List */}
       <div className="flex-1 overflow-y-auto no-scrollbar">
         {notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full opacity-50 gap-3">
-            <CheckCheck className="w-10 h-10 text-gray-400" />
-            <p
-              className={`text-sm font-medium ${isDark ? "text-gray-400" : "text-gray-500"}`}
-            >
-              Semua notifikasi sudah dibaca
-            </p>
+          <div className="px-4 pt-6">
+            <div className="overlay-panel flex flex-col items-center justify-center gap-3 px-6 py-12 text-center opacity-80">
+              <CheckCheck className="w-10 h-10 text-gray-400" />
+              <p
+                className={`text-sm font-medium ${isDark ? "text-gray-400" : "text-gray-500"}`}
+              >
+                Semua notifikasi sudah dibaca
+              </p>
+            </div>
           </div>
         ) : (
-          <ul>
-            {notifications.map((notif, idx) => {
-              const isRead = !!readMap[notif.id];
-              const cfg = iconConfig[notif.type] || iconConfig.calendar;
-              const isLast = idx === notifications.length - 1;
-              return (
-                <li
-                  key={notif.id}
-                  onClick={() => onMarkRead?.(notif.id)}
-                  className={`flex gap-4 px-4 py-4 transition ${cfg.border} ${!isLast ? `border-b ${isDark ? "border-gray-800" : "border-gray-100"}` : ""} ${!isRead && notif.isNew ? (isDark ? "bg-gray-800/60" : "bg-primary-surface-muted-adaptive") : ""}`}
-                >
-                  {/* Icon */}
-                  <div
-                    className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center ${cfg.bg}`}
+          <div className="px-4 pt-4 pb-6">
+            <ul className="overlay-panel overflow-hidden">
+              {notifications.map((notif, idx) => {
+                const isRead = !!readMap[notif.id];
+                const cfg = iconConfig[notif.type] || iconConfig.calendar;
+                const isLast = idx === notifications.length - 1;
+                return (
+                  <li
+                    key={notif.id}
+                    onClick={() => onMarkRead?.(notif.id)}
+                    className={`flex gap-4 px-4 py-4 transition ${cfg.border} ${!isLast ? `border-b ${isDark ? "border-gray-700" : "border-gray-100"}` : ""} ${!isRead && notif.isNew ? (isDark ? "bg-gray-800/60" : "bg-primary-surface-muted-adaptive") : ""}`}
                   >
-                    <cfg.Icon className={`w-5 h-5 ${cfg.text}`} />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <p className="font-bold text-sm leading-tight">
-                        {notif.title}
-                      </p>
-                      <span
-                        className={`text-[10px] font-bold flex-shrink-0 px-2 py-0.5 rounded-full ${
-                          !isRead && notif.isNew
-                            ? "bg-primary-surface-strong-adaptive text-primary-adaptive"
-                            : isDark
-                              ? "text-gray-500"
-                              : "text-gray-400"
-                        }`}
-                      >
-                        {!isRead && notif.isNew ? "Baru" : notif.time}
-                      </span>
-                    </div>
-                    <p
-                      className={`text-xs leading-relaxed ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    <div
+                      className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center ${cfg.bg}`}
                     >
-                      {notif.bodyText}
-                    </p>
-                    {notif.actionLabel && notif.actionTarget && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onNavigate?.(notif.actionTarget, notif.id);
-                        }}
-                        className="text-[11px] font-bold text-primary-adaptive mt-2 tracking-wide hover:text-primary-strong-adaptive transition"
+                      <cfg.Icon className={`w-5 h-5 ${cfg.text}`} />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="font-bold text-sm leading-tight">
+                          {notif.title}
+                        </p>
+                        <span
+                          className={`text-[10px] font-bold flex-shrink-0 px-2 py-0.5 rounded-full ${
+                            !isRead && notif.isNew
+                              ? "bg-primary-surface-strong-adaptive text-primary-adaptive"
+                              : isDark
+                                ? "text-gray-500"
+                                : "text-gray-400"
+                          }`}
+                        >
+                          {!isRead && notif.isNew ? "Baru" : notif.time}
+                        </span>
+                      </div>
+                      <p
+                        className={`text-xs leading-relaxed ${isDark ? "text-gray-400" : "text-gray-600"}`}
                       >
-                        {notif.actionLabel} →
-                      </button>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                        {notif.bodyText}
+                      </p>
+                      {notif.actionLabel && notif.actionTarget && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigate?.(notif.actionTarget, notif.id);
+                          }}
+                          className="text-[11px] font-bold text-primary-adaptive mt-2 tracking-wide hover:text-primary-strong-adaptive transition"
+                        >
+                          {notif.actionLabel} →
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
       </div>
     </div>

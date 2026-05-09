@@ -147,6 +147,12 @@ html.dark {
     background-color: var(--primary-strong);
   }
 
+  .btn-primary-theme:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
   .btn-primary-theme:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
@@ -154,6 +160,343 @@ html.dark {
 
   .shadow-primary-theme {
     box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 34%, transparent);
+  }
+
+  .overlay-panel {
+    border: 1px solid #f3f4f6;
+    border-radius: 1rem;
+    background-color: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  }
+
+  .overlay-subtle-button {
+    color: #4b5563;
+  }
+
+  .overlay-subtle-button:hover {
+    background-color: #f3f4f6;
+  }
+
+  .overlay-danger-soft {
+    border-color: #fecaca;
+    background-color: #fef2f2;
+    color: #dc2626;
+  }
+
+  .overlay-danger-soft:hover {
+    background-color: #fee2e2;
+  }
+
+  .overlay-success-soft {
+    border-color: #a7f3d0;
+    background-color: #ecfdf5;
+    color: #059669;
+  }
+
+  .overlay-success-soft:hover {
+    background-color: #d1fae5;
+  }
+
+  .overlay-warning-soft {
+    border-color: #fde68a;
+    background-color: #fffbeb;
+    color: #b45309;
+  }
+
+  .overlay-warning-soft:hover {
+    background-color: #fef3c7;
+  }
+
+  .semantic-success-surface {
+    background-color: #ecfdf5;
+  }
+
+  .semantic-success-text {
+    color: #059669;
+  }
+
+  .hover\:semantic-success-surface:hover {
+    background-color: #ecfdf5;
+  }
+
+  .hover\:semantic-success-text:hover {
+    color: #059669;
+  }
+
+  .semantic-success-ring {
+    --tw-ring-color: #d1fae5;
+  }
+
+  .semantic-success-dot {
+    background-color: #10b981;
+  }
+
+  .semantic-success-border {
+    border-color: #a7f3d0;
+  }
+
+  .semantic-success-fill {
+    background-color: #10b981;
+  }
+
+  .semantic-warning-surface {
+    background-color: #fffbeb;
+  }
+
+  .semantic-warning-text {
+    color: #b45309;
+  }
+
+  .hover\:semantic-warning-surface:hover {
+    background-color: #fffbeb;
+  }
+
+  .hover\:semantic-warning-text:hover {
+    color: #b45309;
+  }
+
+  .semantic-warning-ring {
+    --tw-ring-color: #fde68a;
+  }
+
+  .semantic-warning-border {
+    border-color: #fde68a;
+  }
+
+  .semantic-warning-fill {
+    background-color: #f59e0b;
+  }
+
+  .semantic-danger-surface {
+    background-color: #fef2f2;
+  }
+
+  .semantic-danger-text {
+    color: #dc2626;
+  }
+
+  .hover\:semantic-danger-surface:hover {
+    background-color: #fef2f2;
+  }
+
+  .hover\:semantic-danger-text:hover {
+    color: #dc2626;
+  }
+
+  .semantic-danger-ring {
+    --tw-ring-color: #fecaca;
+  }
+
+  .semantic-danger-border {
+    border-color: #fecaca;
+  }
+
+  .semantic-danger-fill {
+    background-color: #ef4444;
+  }
+
+  .overlay-skeleton {
+    background-color: #e5e7eb;
+  }
+
+  .overlay-muted-button {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      opacity 0.2s ease;
+  }
+
+  .overlay-muted-button:hover {
+    background-color: #e5e7eb;
+  }
+
+  .overlay-muted-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .overlay-control {
+    border: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+    color: #111827;
+    transition:
+      border-color 0.2s ease,
+      background-color 0.2s ease,
+      color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .overlay-control::placeholder {
+    color: #9ca3af;
+  }
+
+  .overlay-control:focus,
+  .overlay-control:focus-visible {
+    outline: none;
+    --tw-ring-color: var(--primary);
+    border-color: var(--primary);
+  }
+
+  html.dark .overlay-panel {
+    border-color: #374151;
+    background-color: #1f2937;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.24);
+  }
+
+  html.dark .overlay-subtle-button {
+    color: #d1d5db;
+  }
+
+  html.dark .overlay-subtle-button:hover {
+    background-color: #1f2937;
+  }
+
+  html.dark .overlay-danger-soft {
+    border-color: #991b1b;
+    background-color: color-mix(in srgb, #7f1d1d 42%, transparent);
+    color: #fca5a5;
+  }
+
+  html.dark .overlay-danger-soft:hover {
+    background-color: color-mix(in srgb, #7f1d1d 54%, transparent);
+  }
+
+  html.dark .overlay-success-soft {
+    border-color: #065f46;
+    background-color: color-mix(in srgb, #064e3b 42%, transparent);
+    color: #6ee7b7;
+  }
+
+  html.dark .overlay-success-soft:hover {
+    background-color: color-mix(in srgb, #064e3b 56%, transparent);
+  }
+
+  html.dark .overlay-warning-soft {
+    border-color: #92400e;
+    background-color: color-mix(in srgb, #78350f 38%, transparent);
+    color: #fcd34d;
+  }
+
+  html.dark .overlay-warning-soft:hover {
+    background-color: color-mix(in srgb, #78350f 52%, transparent);
+  }
+
+  html.dark .semantic-success-surface {
+    background-color: color-mix(in srgb, #064e3b 42%, transparent);
+  }
+
+  html.dark .semantic-success-text {
+    color: #6ee7b7;
+  }
+
+  html.dark .hover\:semantic-success-surface:hover {
+    background-color: color-mix(in srgb, #064e3b 42%, transparent);
+  }
+
+  html.dark .hover\:semantic-success-text:hover {
+    color: #6ee7b7;
+  }
+
+  html.dark .semantic-success-ring {
+    --tw-ring-color: color-mix(in srgb, #065f46 72%, transparent);
+  }
+
+  html.dark .semantic-success-dot {
+    background-color: #34d399;
+  }
+
+  html.dark .semantic-success-border {
+    border-color: #065f46;
+  }
+
+  html.dark .semantic-success-fill {
+    background-color: #34d399;
+  }
+
+  html.dark .semantic-warning-surface {
+    background-color: color-mix(in srgb, #78350f 38%, transparent);
+  }
+
+  html.dark .semantic-warning-text {
+    color: #fcd34d;
+  }
+
+  html.dark .hover\:semantic-warning-surface:hover {
+    background-color: color-mix(in srgb, #78350f 38%, transparent);
+  }
+
+  html.dark .hover\:semantic-warning-text:hover {
+    color: #fcd34d;
+  }
+
+  html.dark .semantic-warning-ring {
+    --tw-ring-color: color-mix(in srgb, #92400e 72%, transparent);
+  }
+
+  html.dark .semantic-warning-border {
+    border-color: #92400e;
+  }
+
+  html.dark .semantic-warning-fill {
+    background-color: #fbbf24;
+  }
+
+  html.dark .semantic-danger-surface {
+    background-color: color-mix(in srgb, #7f1d1d 42%, transparent);
+  }
+
+  html.dark .semantic-danger-text {
+    color: #fca5a5;
+  }
+
+  html.dark .hover\:semantic-danger-surface:hover {
+    background-color: color-mix(in srgb, #7f1d1d 42%, transparent);
+  }
+
+  html.dark .hover\:semantic-danger-text:hover {
+    color: #fca5a5;
+  }
+
+  html.dark .semantic-danger-ring {
+    --tw-ring-color: color-mix(in srgb, #991b1b 72%, transparent);
+  }
+
+  html.dark .semantic-danger-border {
+    border-color: #991b1b;
+  }
+
+  html.dark .semantic-danger-fill {
+    background-color: #f87171;
+  }
+
+  html.dark .overlay-skeleton {
+    background-color: #374151;
+  }
+
+  html.dark .overlay-muted-button {
+    background-color: #374151;
+    color: #d1d5db;
+  }
+
+  html.dark .overlay-muted-button:hover {
+    background-color: #4b5563;
+  }
+
+  html.dark .overlay-muted-button:disabled {
+    background-color: #1f2937;
+    color: #6b7280;
+  }
+
+  html.dark .overlay-control {
+    border-color: #4b5563;
+    background-color: #374151;
+    color: #ffffff;
+  }
+
+  html.dark .overlay-control::placeholder {
+    color: #6b7280;
   }
 
   .no-scrollbar::-webkit-scrollbar {
@@ -173,7 +516,194 @@ html.dark {
   }
 
   .view-transition {
-    transition: opacity 0.3s ease-in-out;
+    animation: page-enter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    will-change: transform, opacity;
+  }
+
+  .view-transition > * {
+    animation: page-content-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 90ms;
+  }
+
+  .animate-fade-up {
+    animation: beranda-fade-up 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-120%);
+    background: linear-gradient(
+      105deg,
+      transparent 0%,
+      color-mix(in srgb, #ffffff 18%, transparent) 48%,
+      transparent 100%
+    );
+    animation: skeleton-shimmer 2s ease-in-out infinite;
+    animation-delay: var(--skeleton-delay, 0ms);
+    pointer-events: none;
+  }
+
+  .beranda-float {
+    animation: beranda-float 7s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .beranda-float-delayed {
+    animation-delay: -2.5s;
+  }
+
+  .beranda-orb {
+    animation: beranda-orb 12s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+
+  .beranda-orb-delayed {
+    animation-delay: -4s;
+  }
+
+  @keyframes beranda-fade-up {
+    0% {
+      opacity: 0;
+      transform: translateY(16px) scale(0.985);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes page-enter {
+    0% {
+      opacity: 0;
+      transform: translateY(14px) scale(0.992);
+      filter: saturate(0.94);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: saturate(1);
+    }
+  }
+
+  @keyframes page-content-rise {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes beranda-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  @keyframes beranda-orb {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translate3d(0, -10px, 0) scale(1.05);
+      opacity: 0.85;
+    }
+  }
+
+  @keyframes skeleton-shimmer {
+    0% {
+      transform: translateX(-120%);
+    }
+    100% {
+      transform: translateX(120%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .view-transition,
+    .view-transition > *,
+    .animate-fade-up,
+    .beranda-float,
+    .beranda-orb,
+    .skeleton-shimmer::after {
+      animation: none;
+    }
+  }
+}
+
+@layer utilities {
+  .login-float {
+    animation: login-float 8s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .login-orb {
+    animation: login-orb-drift 18s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+
+  .login-orb-slow {
+    animation-duration: 24s;
+  }
+
+  .login-orb-delayed {
+    animation-delay: -7s;
+  }
+
+  @keyframes login-fade-up {
+    0% {
+      opacity: 0;
+      transform: translateY(18px) scale(0.985);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes login-float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-8px) rotate(1deg);
+    }
+  }
+
+  @keyframes login-orb-drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+      opacity: 0.7;
+    }
+    50% {
+      transform: translate3d(0, -14px, 0) scale(1.06);
+      opacity: 0.95;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .login-float,
+    .login-orb {
+      animation: none;
+    }
   }
 
   .pb-safe {
