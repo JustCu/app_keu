@@ -576,7 +576,7 @@ export default function Beranda({
             </p>
           ) : (
             <ScrollReveal delay={220} duration={560} y={16}>
-              <div className="overlay-panel overflow-hidden">
+              <div className={`rounded-2xl shadow-sm border overflow-hidden ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
                 {transaksi.slice(0, 5).map((trx, index) => {
                   const isMasuk = trx.Tipe === "pemasukan";
                   const nominalStr = formatRupiah(
@@ -607,7 +607,7 @@ export default function Beranda({
                       key={trx.ID || index}
                       type="button"
                       onClick={() => handleOpenTransactionDetail(trx)}
-                      className={`w-full flex justify-between items-center p-4 text-left transition-colors duration-200 hover:bg-white/5 ${index < transaksi.slice(0, 5).length - 1 ? `border-b ${isDark ? "border-gray-700" : "border-gray-50"}` : ""}`}
+                      className={`w-full flex justify-between items-center p-4 text-left transition-colors duration-200 ${isDark ? "hover:bg-white/5" : "hover:bg-gray-50"} ${index < transaksi.slice(0, 5).length - 1 ? `border-b ${isDark ? "border-gray-700" : "border-gray-50"}` : ""}`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
