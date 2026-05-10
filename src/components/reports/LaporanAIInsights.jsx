@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bot, Send, Sparkles, X, RefreshCw } from "lucide-react";
+import { Send, Sparkles, X, RefreshCw } from "lucide-react";
 import { fetchAIChatHistory, fetchAIInsights } from "../../services/api";
 
 const MarkdownAIText = lazy(() => import("./MarkdownAIText"));
@@ -251,13 +251,7 @@ export default function LaporanAIInsights({
     loadChatHistory(false, { mode: historyMode, page: historyPage });
   }, [assistantOpen, assistantTab, historyCacheKey, historyMode, historyPage]);
 
-  const openAnalysisFullscreen = () => {
-    setAssistantOpen(true);
-    setAssistantTab("analysis");
-    requestCurrentAnalysis(false);
-  };
-
-  const openChatFullscreen = () => {
+  const openAssistantFullscreen = () => {
     setAssistantOpen(true);
     setAssistantTab("chat");
   };
@@ -293,18 +287,6 @@ export default function LaporanAIInsights({
               Analisis AI Expert Akuntansi • {periodTitle}
             </h3>
           </div>
-          {!aiLoading && (aiData || aiError) && (
-            <button
-              onClick={() => requestCurrentAnalysis(true)}
-              className={`text-xs font-bold transition px-3 py-1.5 rounded-lg active:scale-95 bg-primary-soft-adaptive text-primary-adaptive ${
-                isDark
-                  ? "hover:bg-primary-surface-strong-adaptive"
-                  : "hover:text-primary-strong-adaptive"
-              }`}
-            >
-              Perbarui
-            </button>
-          )}
         </div>
 
         <div className="relative z-10">
@@ -396,37 +378,12 @@ export default function LaporanAIInsights({
             </div>
           </div>
 
-          <div
-            className={`rounded-xl p-3 border ${isDark ? "bg-gray-900/45 border-gray-700" : "bg-white/70 border-teal-100"}`}
+          <button
+            onClick={openAssistantFullscreen}
+            className="w-full py-2.5 rounded-xl btn-primary-theme text-sm font-bold shadow-primary-theme active:scale-[0.98] transition"
           >
-            <p
-              className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
-            >
-              Gunakan mode layar penuh agar hasil analisis dan chat AI lebih
-              nyaman dibaca.
-            </p>
-            <div className="grid grid-cols-1 gap-2 mt-3 md:grid-cols-2">
-              <button
-                onClick={openAnalysisFullscreen}
-                disabled={aiLoading}
-                className="w-full py-2.5 rounded-xl btn-primary-theme text-sm font-bold shadow-primary-theme active:scale-[0.98] transition disabled:opacity-70"
-              >
-                {aiLoading
-                  ? "Menganalisis kondisi keuangan..."
-                  : "Analisis Kondisi Keuangan Saat Ini"}
-              </button>
-              <button
-                onClick={openChatFullscreen}
-                className={`w-full py-2.5 rounded-xl text-sm font-bold transition border flex items-center justify-center gap-2 ${
-                  isDark
-                    ? "border-gray-600 bg-gray-800 hover:bg-gray-700 text-gray-100"
-                    : "border-gray-200 bg-white hover:bg-gray-50 text-gray-900"
-                }`}
-              >
-                <Bot className="w-4 h-4" /> Chat dengan AI Agent
-              </button>
-            </div>
-          </div>
+            Buka AI Assistant
+          </button>
         </div>
       </div>
 
