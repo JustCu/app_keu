@@ -1,6 +1,9 @@
 import { Bar, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
+  BarController,
+  LineController,
+  DoughnutController,
   CategoryScale,
   LinearScale,
   BarElement,
@@ -13,6 +16,9 @@ import {
 } from "chart.js";
 
 ChartJS.register(
+  BarController,
+  LineController,
+  DoughnutController,
   CategoryScale,
   LinearScale,
   BarElement,
