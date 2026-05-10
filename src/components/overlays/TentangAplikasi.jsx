@@ -89,8 +89,8 @@ export default function TentangAplikasi({ isOpen, onClose }) {
         <div className="px-4 py-6 flex flex-col gap-6">
           {/* App Identity */}
           <div className="flex flex-col items-center text-center gap-3 pt-2">
-            <img 
-              src={Logo} 
+            <img
+              src={Logo}
               alt="Dompet Keluarga Logo"
               className="w-20 h-20 rounded-3xl shadow-lg object-cover"
             />

@@ -7,6 +7,23 @@ import { apiGetFamilyAudit, apiRollbackFamilyAction } from "../../services/api";
 
 const RiwayatAuditContent = lazy(() => import("./RiwayatAuditContent"));
 
+// Define ACTION_OPTIONS locally to avoid undefined reference
+const ACTION_OPTIONS = [
+  { value: "ALL", label: "Semua Aksi" },
+  { value: "CREATE_FAMILY", label: "Buat Keluarga" },
+  { value: "JOIN_FAMILY", label: "Gabung Keluarga" },
+  { value: "REMOVE_MEMBER", label: "Hapus Anggota" },
+  { value: "LEAVE_FAMILY", label: "Keluar Keluarga" },
+  { value: "ROTATE_INVITE_CODE", label: "Putar Kode Undangan" },
+  { value: "TRANSFER_ADMIN", label: "Transfer Admin" },
+  { value: "ROLLBACK_REMOVE_MEMBER", label: "Rollback Hapus Anggota" },
+  { value: "ROLLBACK_TRANSFER_ADMIN", label: "Rollback Transfer Admin" },
+  {
+    value: "ROLLBACK_ROTATE_INVITE_CODE",
+    label: "Rollback Kode Undangan",
+  },
+];
+
 const ACTION_LABELS = ACTION_OPTIONS.reduce((acc, item) => {
   acc[item.value] = item.label;
   return acc;
