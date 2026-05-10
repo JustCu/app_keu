@@ -1,34 +1,5 @@
 import { Bar, Doughnut } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  BarController,
-  LineController,
-  DoughnutController,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from "chart.js";
-
-ChartJS.register(
-  BarController,
-  LineController,
-  DoughnutController,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-);
+import "chart.js/auto";
 
 const formatRupiah = (angka) => new Intl.NumberFormat("id-ID").format(angka);
 const formatRupiahPendek = (angka) => {
