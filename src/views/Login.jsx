@@ -396,11 +396,11 @@ export default function Login({ onOpenTentang }) {
                 className={`min-w-0 transition-all duration-700 ease-out delay-100 ${entering ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
               >
                 <h1 className="text-2xl font-extrabold leading-tight mt-1">
-                  Kelola Keuangan Keluarga
+                  Dompet Keluarga
                 </h1>
                 <p className={`text-sm mt-2 ${ui.muted}`}>
-                  Masuk untuk mengelola transaksi, anggaran, notifikasi, dan
-                  insight.
+                  Catat transaksi, kelola anggaran, dan pantau keuangan bersama
+                  keluarga dengan mudah.
                 </p>
               </div>
             </div>
