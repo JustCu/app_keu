@@ -1,5 +1,6 @@
 ﻿import {
   X,
+  Wallet,
   GitBranch,
   Mail,
   Globe,
