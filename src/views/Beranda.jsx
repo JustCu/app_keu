@@ -576,7 +576,7 @@ export default function Beranda({
             </p>
           ) : (
             <ScrollReveal delay={220} duration={560} y={16}>
-              <div className="overlay-panel">
+              <div className="overlay-panel overflow-hidden">
                 {transaksi.slice(0, 5).map((trx, index) => {
                   const isMasuk = trx.Tipe === "pemasukan";
                   const nominalStr = formatRupiah(
@@ -595,8 +595,12 @@ export default function Beranda({
                   );
                   const icon = pos?.Ikon || (isMasuk ? "??" : "??");
                   const iconBg = isMasuk
-                    ? "semantic-success-surface semantic-success-border"
-                    : "bg-primary-surface-adaptive border-primary-soft-adaptive";
+                    ? isDark
+                      ? "bg-green-900/40 border-green-800 text-green-400"
+                      : "bg-green-50 border-green-100 text-green-600"
+                    : isDark
+                      ? "bg-primary-surface-strong-adaptive border-primary-soft-adaptive text-primary-strong-adaptive"
+                      : "bg-primary-surface-adaptive border-primary-soft-theme text-primary-adaptive";
 
                   return (
                     <button
@@ -607,7 +611,7 @@ export default function Beranda({
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm border ${iconBg} beranda-float`}
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm border ${iconBg}`}
                         >
                           {icon}
                         </div>
