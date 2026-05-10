@@ -576,7 +576,9 @@ export default function Beranda({
             </p>
           ) : (
             <ScrollReveal delay={220} duration={560} y={16}>
-              <div className={`rounded-2xl shadow-sm border overflow-hidden ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
+              <div
+                className={`rounded-2xl shadow-sm border overflow-hidden ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}
+              >
                 {transaksi.slice(0, 5).map((trx, index) => {
                   const isMasuk = trx.Tipe === "pemasukan";
                   const nominalStr = formatRupiah(

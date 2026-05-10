@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+﻿import { useState, useMemo, useEffect } from "react";
 import {
   ChevronLeft,
   Filter,
@@ -257,7 +257,7 @@ export default function SemuaTransaksi({
       monthSet.add(JSON.stringify({ key: k, name: n }));
     });
 
-    // Add current month if it's not in the data yet
+    // Add current month if not in data yet
     const d = new Date();
     const currentName = d.toLocaleDateString("id-ID", {
       month: "long",
@@ -270,7 +270,32 @@ export default function SemuaTransaksi({
       .sort((a, b) => b.key.localeCompare(a.key));
   }, [transaksi, currentMonthKey]);
 
-  // 2. Filter & Sort Transactions
+  // 2. Month navigation helpers
+  const allMonthKeys = useMemo(() => {
+    const sorted = monthsForDropdown
+      .map((m) => m.key)
+      .sort((a, b) => b.localeCompare(a));
+    return ["Semua", ...sorted];
+  }, [monthsForDropdown]);
+
+  const currentMonthIdx = allMonthKeys.indexOf(selectedMonth);
+  const canGoPrev = currentMonthIdx < allMonthKeys.length - 1;
+  const canGoNext = currentMonthIdx > 0;
+
+  const goPrevMonth = () => {
+    if (canGoPrev) setSelectedMonth(allMonthKeys[currentMonthIdx + 1]);
+  };
+  const goNextMonth = () => {
+    if (canGoNext) setSelectedMonth(allMonthKeys[currentMonthIdx - 1]);
+  };
+
+  const selectedMonthLabel =
+    selectedMonth === "Semua"
+      ? "Semua Bulan"
+      : (monthsForDropdown.find((m) => m.key === selectedMonth)?.name ??
+          selectedMonth);
+
+  // 3. Filter & Sort Transactions
   const filteredTransactions = useMemo(() => {
     let filtered = transaksi;
     if (selectedMonth !== "Semua") {
@@ -286,7 +311,7 @@ export default function SemuaTransaksi({
     );
   }, [transaksi, selectedMonth]);
 
-  // 3. Pagination
+  // 4. Pagination
   const totalPages = Math.max(
     1,
     Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE),
@@ -296,7 +321,7 @@ export default function SemuaTransaksi({
     return filteredTransactions.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredTransactions, currentPage]);
 
-  // 4. Group current page data
+  // 5. Group current page data
   const groupedPageData = useMemo(() => {
     const groups = {};
     pageData.forEach((trx) => {
@@ -349,45 +374,54 @@ export default function SemuaTransaksi({
     <div
       className={`absolute inset-0 z-50 flex flex-col ${bg} transition-colors duration-300`}
     >
-      {/* Header */}
+      {/* Header with month navigator */}
       <header
         className={`flex items-center justify-between px-4 pt-8 pb-4 border-b ${headerBg} shadow-sm z-10`}
       >
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onClose}
-            className={`w-8 h-8 -ml-2 rounded-full flex items-center justify-center transition ${subtleButtonClass}`}
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <h2 className={`text-lg font-bold ${textPrimary}`}>
-            Semua Transaksi
-          </h2>
-        </div>
-      </header>
+        <button
+          onClick={onClose}
+          className={`w-8 h-8 -ml-2 rounded-full flex items-center justify-center transition ${subtleButtonClass}`}
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
 
-      {/* Filter Dropdown Section */}
-      <div className={`px-4 py-4 border-b ${headerBg}`}>
-        <div className="relative">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="overlay-control w-full appearance-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2"
+        {/* Month navigator */}
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={goPrevMonth}
+            disabled={!canGoPrev}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition active:scale-90 ${
+              canGoPrev ? subtleButtonClass : "opacity-25 cursor-not-allowed"
+            }`}
           >
-            <option value="Semua">Semua Bulan</option>
-            {monthsForDropdown.map((m) => (
-              <option key={m.key} value={m.key}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-          <div
-            className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none ${textSecondary}`}
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setSelectedMonth("Semua")}
+            title="Tap untuk lihat semua bulan"
+            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-xl transition active:scale-95 ${
+              isDark ? "hover:bg-gray-800" : "hover:bg-gray-50"
+            }`}
           >
-            <ChevronDown className="w-5 h-5" />
-          </div>
+            <CalendarDays className={`w-3.5 h-3.5 ${textSecondary}`} />
+            <span className={`text-sm font-bold ${textPrimary}`}>
+              {selectedMonthLabel}
+            </span>
+          </button>
+          <button
+            onClick={goNextMonth}
+            disabled={!canGoNext}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition active:scale-90 ${
+              canGoNext ? subtleButtonClass : "opacity-25 cursor-not-allowed"
+            }`}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
-      </div>
+
+        {/* Spacer for symmetry */}
+        <div className="w-6" />
+      </header>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto no-scrollbar pb-6 relative">
@@ -396,7 +430,8 @@ export default function SemuaTransaksi({
             <div className="overlay-panel flex flex-col items-center justify-center gap-3 px-6 py-12 text-center opacity-80">
               <Filter className={`w-10 h-10 ${textSecondary}`} />
               <p className={`text-sm font-medium ${textSecondary}`}>
-                Tidak ada transaksi.
+                Tidak ada transaksi
+                {selectedMonth !== "Semua" ? ` di ${selectedMonthLabel}` : ""}.
               </p>
             </div>
           </div>
@@ -436,7 +471,11 @@ export default function SemuaTransaksi({
                       key={trx.ID || index}
                       type="button"
                       onClick={() => handleOpenTransactionDetail(trx)}
-                      className={`w-full flex justify-between items-center p-4 text-left transition-colors ${index < group.items.length - 1 ? `border-b ${isDark ? "border-gray-700" : "border-gray-50"}` : ""} ${isDark ? "hover:bg-white/5" : "hover:bg-gray-50"}`}
+                      className={`w-full flex justify-between items-center p-4 text-left transition-colors ${
+                        index < group.items.length - 1
+                          ? `border-b ${isDark ? "border-gray-700" : "border-gray-50"}`
+                          : ""
+                      } ${isDark ? "hover:bg-white/5" : "hover:bg-gray-50"}`}
                     >
                       <div className="flex items-center gap-3">
                         <div
