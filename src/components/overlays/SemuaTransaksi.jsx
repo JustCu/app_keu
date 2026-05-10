@@ -67,6 +67,12 @@ const getDetailFieldVisual = (label) => {
   if (label === "Tanggal") {
     return { icon: CalendarDays, tone: "text-sky-500" };
   }
+  if (label === "Ditambahkan Oleh") {
+    return { icon: FileText, tone: "text-amber-500" };
+  }
+  if (label === "Tipe") {
+    return { icon: CircleDollarSign, tone: "text-emerald-500" };
+  }
   if (label === "Pos Anggaran") {
     return { icon: Tags, tone: "text-violet-500" };
   }
@@ -293,7 +299,7 @@ export default function SemuaTransaksi({
     selectedMonth === "Semua"
       ? "Semua Bulan"
       : (monthsForDropdown.find((m) => m.key === selectedMonth)?.name ??
-          selectedMonth);
+        selectedMonth);
 
   // 3. Filter & Sort Transactions
   const filteredTransactions = useMemo(() => {
@@ -348,13 +354,25 @@ export default function SemuaTransaksi({
 
     push(
       "Tanggal",
-      hasValue(selectedTransaction.Tanggal)
-        ? formatDateTime(selectedTransaction.Tanggal)
+      hasValue(selectedTransaction.Timestamp || selectedTransaction.Tanggal)
+        ? formatDateTime(
+            selectedTransaction.Timestamp || selectedTransaction.Tanggal,
+          )
         : "",
     );
-    push("Ditambahkan Oleh", selectedTransaction.AddedByName);
-    push("ID Pengguna", selectedTransaction.AddedBy);
+    push(
+      "Ditambahkan Oleh",
+      selectedTransaction.AddedByName || selectedTransaction.AddedBy,
+    );
+    push(
+      "Tipe",
+      selectedTransaction.Tipe === "pemasukan" ? "Pemasukan" : "Pengeluaran",
+    );
     push("Pos Anggaran", selectedTransaction["Pos Anggaran"]);
+    push(
+      "Nominal",
+      `Rp ${formatRupiah(parseInt(String(selectedTransaction.Nominal || "").replace(/[^0-9]/g, ""), 10) || 0)}`,
+    );
     push("Catatan", selectedTransaction.Catatan);
 
     return rows;
@@ -449,9 +467,16 @@ export default function SemuaTransaksi({
                   const nominalStr = formatRupiah(
                     String(trx.Nominal || "").replace(/[^0-9]/g, ""),
                   );
-                  const dateStr = new Date(trx.Tanggal).toLocaleDateString(
+                  const dateSource = trx.Timestamp || trx.Tanggal;
+                  const dateTimeStr = new Date(dateSource).toLocaleString(
                     "id-ID",
-                    { day: "numeric", month: "short" },
+                    {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
                   );
 
                   const pos = anggaran.find(
@@ -471,34 +496,37 @@ export default function SemuaTransaksi({
                       key={trx.ID || index}
                       type="button"
                       onClick={() => handleOpenTransactionDetail(trx)}
-                      className={`w-full flex justify-between items-center p-4 text-left transition-colors ${
-                        index < group.items.length - 1
-                          ? `border-b ${isDark ? "border-gray-700" : "border-gray-50"}`
-                          : ""
-                      } ${isDark ? "hover:bg-white/5" : "hover:bg-gray-50"}`}
+                      className={`w-full flex justify-between items-start gap-3 p-4 text-left transition-colors duration-200 ${
+                        isDark ? "hover:bg-white/5" : "hover:bg-gray-50"
+                      } ${index < group.items.length - 1 ? `border-b ${isDark ? "border-gray-700" : "border-gray-50"}` : ""}`}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
                         <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm border ${iconBg}`}
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm border shrink-0 ${iconBg}`}
                         >
                           {icon}
                         </div>
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <p className={`font-bold text-sm ${textPrimary}`}>
-                            {trx.Catatan || trx["Pos Anggaran"]}
+                            {trx["Pos Anggaran"]}
                           </p>
                           <p
-                            className={`text-[11px] font-medium mt-0.5 ${textSecondary}`}
+                            className={`text-xs font-medium mt-0.5 truncate ${textSecondary}`}
                           >
-                            {trx["Pos Anggaran"]} • {dateStr}
+                            {dateTimeStr} • {trx.AddedByName || "Unknown"}
                           </p>
                         </div>
                       </div>
-                      <p
-                        className={`font-bold text-sm ${isMasuk ? "text-green-500" : isDark ? "text-gray-300" : "text-gray-900"}`}
-                      >
-                        {isMasuk ? "+" : "-"} Rp {nominalStr}
-                      </p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <p
+                          className={`font-bold text-sm ${isMasuk ? "semantic-success-text" : isDark ? "text-gray-200" : "text-gray-900"}`}
+                        >
+                          {isMasuk ? "+" : "-"} Rp {nominalStr}
+                        </p>
+                        <ChevronRight
+                          className={`w-4 h-4 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                        />
+                      </div>
                     </button>
                   );
                 })}
@@ -554,7 +582,7 @@ export default function SemuaTransaksi({
 
       {selectedTransaction && (
         <div
-          className={`absolute inset-0 z-[60] flex flex-col ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}
+          className={`fixed inset-0 z-[9999] flex flex-col transform transition-transform duration-300 ease-in-out shadow-2xl ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}
         >
           <header
             className={`flex justify-between items-center px-4 pt-8 pb-4 border-b ${isDark ? "border-gray-800 bg-gray-900" : "border-gray-100 bg-white"}`}
@@ -566,9 +594,7 @@ export default function SemuaTransaksi({
                 Detail Transaksi
               </p>
               <h2 className="text-lg font-bold mt-0.5">
-                {selectedTransaction.Catatan ||
-                  selectedTransaction["Pos Anggaran"] ||
-                  "Transaksi"}
+                {selectedTransaction["Pos Anggaran"] || "Transaksi"}
               </h2>
             </div>
             <button
@@ -742,56 +768,43 @@ export default function SemuaTransaksi({
                 />
 
                 <div className="px-4 flex flex-col gap-3">
-                  <div
-                    className={`rounded-xl border px-4 py-3 ${isDark ? "border-gray-800 bg-gray-800/60" : "border-gray-100 bg-gray-50"}`}
-                  >
-                    <p
-                      className={`text-xs font-bold uppercase tracking-wider ${isDark ? "text-gray-400" : "text-gray-500"}`}
-                    >
-                      Jenis Transaksi
-                    </p>
-                    <p
-                      className={`mt-1 text-sm font-semibold ${selectedTransaction.Tipe === "pemasukan" ? "text-green-500" : "text-red-500"}`}
-                    >
-                      {selectedTransaction.Tipe === "pemasukan"
-                        ? "Pemasukan"
-                        : "Pengeluaran"}
-                    </p>
-                  </div>
+                  {detailRows
+                    .filter(
+                      (row) => row.label !== "Nominal" && row.label !== "Tipe",
+                    )
+                    .map((row, index) => {
+                      const fieldVisual = getDetailFieldVisual(row.label);
+                      const FieldIcon = fieldVisual.icon;
 
-                  {detailRows.map((row, index) => {
-                    const fieldVisual = getDetailFieldVisual(row.label);
-                    const FieldIcon = fieldVisual.icon;
-
-                    return (
-                      <div
-                        key={`${row.label}-${index}`}
-                        className={`rounded-xl border px-4 py-3 ${isDark ? "border-gray-800 bg-gray-800/60" : "border-gray-100 bg-white"}`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? "bg-gray-700/80" : "bg-gray-100"}`}
-                          >
-                            <FieldIcon
-                              className={`w-4 h-4 ${fieldVisual.tone}`}
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p
-                              className={`text-[11px] font-bold uppercase tracking-wider ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                      return (
+                        <div
+                          key={`${row.label}-${index}`}
+                          className={`rounded-xl border px-4 py-3 ${isDark ? "border-gray-800 bg-gray-800/60" : "border-gray-100 bg-white"}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? "bg-gray-700/80" : "bg-gray-100"}`}
                             >
-                              {row.label}
-                            </p>
-                            <p
-                              className={`text-sm font-semibold mt-1 break-words ${isDark ? "text-gray-100" : "text-gray-900"}`}
-                            >
-                              {row.value}
-                            </p>
+                              <FieldIcon
+                                className={`w-4 h-4 ${fieldVisual.tone}`}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className={`text-[11px] font-bold uppercase tracking-wider ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                              >
+                                {row.label}
+                              </p>
+                              <p
+                                className={`text-sm font-semibold mt-1 break-words whitespace-pre-wrap ${isDark ? "text-gray-100" : "text-gray-900"}`}
+                              >
+                                {row.value}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               </>
             )}

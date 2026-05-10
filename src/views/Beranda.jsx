@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import {
   Eye,
   EyeOff,
@@ -162,6 +162,9 @@ const fallbackShape = (index) => ({
 const hasValue = (value) =>
   value !== undefined && value !== null && value !== "";
 
+const parseNominal = (value) =>
+  parseInt(String(value || "").replace(/[^0-9]/g, ""), 10) || 0;
+
 const formatDateTime = (value) => {
   const raw = typeof value === "string" ? value.trim() : "";
   const hasExplicitTime = /T\d{2}:\d{2}|\s\d{2}:\d{2}/.test(raw);
@@ -308,12 +311,143 @@ export default function Beranda({
   let totalKeluar = 0;
 
   transaksi.forEach((trx) => {
-    const nominalRaw = String(trx.Nominal || "").replace(/[^0-9]/g, "");
-    const nominal = parseInt(nominalRaw, 10) || 0;
+    const nominal = parseNominal(trx.Nominal);
 
     if (trx.Tipe === "pemasukan") totalMasuk += nominal;
     else if (trx.Tipe === "pengeluaran") totalKeluar += nominal;
   });
+
+  const overviewMetrics = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+    let masukBulanIni = 0;
+    let keluarBulanIni = 0;
+    let masukBulanLalu = 0;
+    let keluarBulanLalu = 0;
+    const pengeluaranPerPosBulanIni = {};
+
+    transaksi.forEach((trx) => {
+      const tanggal = new Date(trx.Tanggal);
+      if (Number.isNaN(tanggal.getTime())) return;
+
+      const nominal = parseNominal(trx.Nominal);
+      const isBulanIni =
+        tanggal.getMonth() === currentMonth &&
+        tanggal.getFullYear() === currentYear;
+      const isBulanLalu =
+        tanggal.getMonth() === prevMonth && tanggal.getFullYear() === prevYear;
+
+      if (isBulanIni) {
+        if (trx.Tipe === "pemasukan") masukBulanIni += nominal;
+        if (trx.Tipe === "pengeluaran") {
+          keluarBulanIni += nominal;
+          const pos = String(trx["Pos Anggaran"] || "Lainnya");
+          pengeluaranPerPosBulanIni[pos] =
+            (pengeluaranPerPosBulanIni[pos] || 0) + nominal;
+        }
+      }
+
+      if (isBulanLalu) {
+        if (trx.Tipe === "pemasukan") masukBulanLalu += nominal;
+        if (trx.Tipe === "pengeluaran") keluarBulanLalu += nominal;
+      }
+    });
+
+    const saldoBulanIni = masukBulanIni - keluarBulanIni;
+    const saldoBulanLalu = masukBulanLalu - keluarBulanLalu;
+
+    let pertumbuhanBulanan = 0;
+    let pertumbuhanLabel = "0.0%";
+    if (saldoBulanLalu === 0) {
+      if (saldoBulanIni > 0) {
+        pertumbuhanBulanan = 100;
+        pertumbuhanLabel = "+100.0%";
+      } else if (saldoBulanIni < 0) {
+        pertumbuhanBulanan = -100;
+        pertumbuhanLabel = "-100.0%";
+      }
+    } else {
+      pertumbuhanBulanan =
+        ((saldoBulanIni - saldoBulanLalu) / Math.abs(saldoBulanLalu)) * 100;
+      const prefix = pertumbuhanBulanan > 0 ? "+" : "";
+      pertumbuhanLabel = `${prefix}${pertumbuhanBulanan.toFixed(1)}%`;
+    }
+
+    const rasioTabungan =
+      masukBulanIni > 0 ? (saldoBulanIni / masukBulanIni) * 100 : 0;
+
+    let totalMelebihiAnggaran = 0;
+    let jumlahPosMelebihi = 0;
+    anggaran
+      .filter((pos) => (pos.Tipe || "pengeluaran") === "pengeluaran")
+      .forEach((pos) => {
+        const batas = parseNominal(pos.Batas || pos["Batas Anggaran"] || 0);
+        if (batas <= 0) return;
+
+        const terpakai = pengeluaranPerPosBulanIni[pos.Nama] || 0;
+        const selisih = terpakai - batas;
+        if (selisih > 0) {
+          totalMelebihiAnggaran += selisih;
+          jumlahPosMelebihi += 1;
+        }
+      });
+
+    return {
+      pertumbuhanBulanan,
+      pertumbuhanLabel,
+      rasioTabungan,
+      totalPengeluaranBulanIni: keluarBulanIni,
+      totalMelebihiAnggaran,
+      jumlahPosMelebihi,
+    };
+  }, [transaksi, anggaran]);
+
+  const formatRupiah = (angka) => new Intl.NumberFormat("id-ID").format(angka);
+
+  const overviewCards = [
+    {
+      title: "Pertumbuhan Bulanan",
+      value: overviewMetrics.pertumbuhanLabel,
+      subtitle: "dibanding bulan lalu",
+      valueClass:
+        overviewMetrics.pertumbuhanBulanan >= 0
+          ? "semantic-success-text"
+          : "semantic-danger-text",
+    },
+    {
+      title: "Rasio Tabungan",
+      value: `${overviewMetrics.rasioTabungan.toFixed(1)}%`,
+      subtitle: "dari pemasukan bulan ini",
+      valueClass:
+        overviewMetrics.rasioTabungan >= 20
+          ? "semantic-success-text"
+          : overviewMetrics.rasioTabungan >= 0
+            ? "semantic-warning-text"
+            : "semantic-danger-text",
+    },
+    {
+      title: "Total Pengeluaran",
+      value: `Rp ${formatRupiah(overviewMetrics.totalPengeluaranBulanIni)}`,
+      subtitle: "akumulasi bulan ini",
+      valueClass: isDark ? "text-gray-100" : "text-gray-900",
+    },
+    {
+      title: "Melebihi Anggaran",
+      value: `Rp ${formatRupiah(overviewMetrics.totalMelebihiAnggaran)}`,
+      subtitle:
+        overviewMetrics.jumlahPosMelebihi > 0
+          ? `${overviewMetrics.jumlahPosMelebihi} pos melewati batas`
+          : "semua pos masih aman",
+      valueClass:
+        overviewMetrics.totalMelebihiAnggaran > 0
+          ? "semantic-danger-text"
+          : "semantic-success-text",
+    },
+  ];
 
   const totalSaldo = totalMasuk - totalKeluar;
   const shellMotionClass = entering
@@ -324,8 +458,6 @@ export default function Beranda({
     5,
     Math.max(3, transaksi.length || lastKnownTxCount),
   );
-
-  const formatRupiah = (angka) => new Intl.NumberFormat("id-ID").format(angka);
 
   const detailRows = selectedTransaction
     ? buildTransactionDetailGroups(selectedTransaction, formatRupiah)
@@ -543,6 +675,35 @@ export default function Beranda({
         </ScrollReveal>
       </section>
 
+      <section className="px-4 mt-6">
+        <ScrollReveal delay={190} duration={560} y={14}>
+          <div className="grid grid-cols-2 gap-3">
+            {overviewCards.map((card) => (
+              <div
+                key={card.title}
+                className={`rounded-2xl border p-3.5 shadow-sm ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}
+              >
+                <p
+                  className={`text-[11px] font-bold uppercase tracking-wide ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                >
+                  {card.title}
+                </p>
+                <p
+                  className={`mt-2 text-[15px] font-extrabold ${card.valueClass}`}
+                >
+                  {card.value}
+                </p>
+                <p
+                  className={`mt-1 text-[11px] font-medium ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                >
+                  {card.subtitle}
+                </p>
+              </div>
+            ))}
+          </div>
+        </ScrollReveal>
+      </section>
+
       <section className="px-4 mt-8">
         <div
           className={`flex justify-between items-center mb-4 transition-all duration-700 ease-out delay-200 ${entering ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
@@ -584,11 +745,16 @@ export default function Beranda({
                   const nominalStr = formatRupiah(
                     String(trx.Nominal || "").replace(/[^0-9]/g, ""),
                   );
-                  const dateStr = new Date(trx.Tanggal).toLocaleDateString(
+                  // Gunakan Timestamp jika ada (include waktu saat record), fallback ke Tanggal
+                  const dateSource = trx.Timestamp || trx.Tanggal;
+                  const dateTimeStr = new Date(dateSource).toLocaleString(
                     "id-ID",
                     {
                       day: "numeric",
                       month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     },
                   );
 
@@ -609,29 +775,29 @@ export default function Beranda({
                       key={trx.ID || index}
                       type="button"
                       onClick={() => handleOpenTransactionDetail(trx)}
-                      className={`w-full flex justify-between items-center p-4 text-left transition-colors duration-200 ${isDark ? "hover:bg-white/5" : "hover:bg-gray-50"} ${index < transaksi.slice(0, 5).length - 1 ? `border-b ${isDark ? "border-gray-700" : "border-gray-50"}` : ""}`}
+                      className={`w-full flex justify-between items-start gap-3 p-4 text-left transition-colors duration-200 ${isDark ? "hover:bg-white/5" : "hover:bg-gray-50"} ${index < transaksi.slice(0, 5).length - 1 ? `border-b ${isDark ? "border-gray-700" : "border-gray-50"}` : ""}`}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
                         <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm border ${iconBg}`}
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm border shrink-0 ${iconBg}`}
                         >
                           {icon}
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p
-                            className={`font-bold text-sm truncate ${isDark ? "text-white" : "text-gray-900"}`}
+                            className={`font-bold text-sm line-clamp-1 truncate ${isDark ? "text-white" : "text-gray-900"}`}
                           >
-                            {trx.Catatan || trx["Pos Anggaran"]}
+                            {trx["Pos Anggaran"]}
                           </p>
                           <p
                             className={`text-xs font-medium mt-0.5 truncate ${isDark ? "text-gray-400" : "text-gray-500"}`}
                           >
-                            {trx["Pos Anggaran"]} • {dateStr}
+                            {dateTimeStr} • {trx.AddedByName || "Unknown"}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         <p
                           className={`font-bold text-sm ${isMasuk ? "semantic-success-text" : isDark ? "text-gray-200" : "text-gray-900"}`}
                         >
@@ -669,9 +835,7 @@ export default function Beranda({
                 Detail Transaksi
               </p>
               <h2 className="text-lg font-bold mt-0.5">
-                {selectedTransaction.Catatan ||
-                  selectedTransaction["Pos Anggaran"] ||
-                  "Transaksi"}
+                {selectedTransaction["Pos Anggaran"] || "Transaksi"}
               </h2>
             </div>
             <button
@@ -802,8 +966,8 @@ export default function Beranda({
                   >
                     Catatan (Opsional)
                   </label>
-                  <input
-                    type="text"
+                  <textarea
+                    rows={4}
                     value={transactionForm.catatan}
                     onChange={(e) =>
                       setTransactionForm((prev) => ({
@@ -811,8 +975,8 @@ export default function Beranda({
                         catatan: e.target.value,
                       }))
                     }
-                    className="overlay-control w-full font-medium rounded-xl p-4 focus:ring-2"
-                    placeholder="Tambahkan catatan transaksi"
+                    className="overlay-control w-full font-medium rounded-xl p-4 focus:ring-2 resize-none"
+                    placeholder="Tambahkan catatan atau daftar item belanja"
                   />
                 </div>
               </div>
@@ -893,7 +1057,7 @@ export default function Beranda({
                                     {row.label}
                                   </p>
                                   <p
-                                    className={`text-sm font-semibold mt-1 break-words ${isDark ? "text-gray-100" : "text-gray-900"}`}
+                                    className={`text-sm font-semibold mt-1 break-words whitespace-pre-wrap ${isDark ? "text-gray-100" : "text-gray-900"}`}
                                   >
                                     {row.value}
                                   </p>

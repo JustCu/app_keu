@@ -281,6 +281,7 @@ export default function Laporan({
             isActive={isActive}
             aiEnabled={aiEnabled}
             familyId={user?.familyId}
+            userId={user?.id}
             filter={filter}
             periodTitle={periodTitle}
             filteredTransaksi={filteredTransaksi}

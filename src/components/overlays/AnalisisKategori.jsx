@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Sparkles, AlertCircle, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -141,6 +142,9 @@ export default function AnalisisKategori({
 
   if (!isOpen) return null;
 
+  const portalTarget = typeof document !== "undefined" ? document.body : null;
+  if (!portalTarget) return null;
+
   const score = Number(insight?.score || 0);
   const scoreStyle = getScoreStyle(score);
   const panelClass = isDark
@@ -150,9 +154,9 @@ export default function AnalisisKategori({
   const textMuted = isDark ? "text-gray-400" : "text-gray-500";
   const textSoft = isDark ? "text-gray-500" : "text-gray-400";
 
-  return (
+  const overlay = (
     <div
-      className={`fixed inset-0 z-[70] flex flex-col shadow-2xl ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}
+      className={`fixed inset-0 z-[9999] flex flex-col shadow-2xl ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}
     >
       <header
         className={`flex items-center justify-between px-4 pt-8 pb-4 border-b ${isDark ? "border-gray-800 bg-gray-900" : "border-gray-100 bg-white"}`}
@@ -389,6 +393,8 @@ export default function AnalisisKategori({
       </div>
     </div>
   );
+
+  return createPortal(overlay, portalTarget);
 }
 
 function AnalisisKategoriLoadingSkeleton({ isDark, panelClass }) {

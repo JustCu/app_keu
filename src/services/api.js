@@ -444,6 +444,9 @@ export async function fetchAIInsights(
     const payload = {
       period: options?.period || "bulanan",
       detailLevel: options?.detailLevel || "standard",
+      mode: options?.mode || "analysis",
+      userId: options?.userId || "",
+      question: options?.question || "",
       focusAreas: Array.isArray(options?.focusAreas) ? options.focusAreas : [],
       summaryData: options?.summaryData || null,
     };
@@ -529,6 +532,51 @@ export async function fetchAICategoryWeeklyHistory(
     throw new Error(result.message || "UNKNOWN_ERROR");
   } catch (error) {
     console.error("Error fetching AI category weekly history:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Mengambil histori interaksi AI (chat + analisis) dari backend spreadsheet
+ */
+export async function fetchAIChatHistory({
+  familyId,
+  userId = "",
+  mode = "all",
+  page = 1,
+  pageSize = 10,
+} = {}) {
+  try {
+    const params = new URLSearchParams({
+      action: "getAIChatHistory",
+      familyId: String(familyId || ""),
+      page: String(page || 1),
+      pageSize: String(pageSize || 10),
+    });
+    if (userId) params.set("userId", String(userId));
+    if (mode) params.set("mode", String(mode));
+
+    const response = await fetch(`${GAS_WEB_APP_URL}?${params.toString()}`);
+    const result = await response.json();
+    if (result.status === "success") {
+      return {
+        success: true,
+        data: {
+          items: result.data?.items || [],
+          pagination: result.data?.pagination || {
+            total: 0,
+            page: 1,
+            pageSize: pageSize || 10,
+            totalPages: 1,
+            hasNext: false,
+            hasPrev: false,
+          },
+        },
+      };
+    }
+    throw new Error(result.message || "UNKNOWN_ERROR");
+  } catch (error) {
+    console.error("Error fetching AI history:", error);
     return { success: false, error: error.message };
   }
 }

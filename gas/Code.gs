@@ -1631,6 +1631,13 @@ function handleRequest(e, isPost) {
       const detailLevel = String(
         reqBody.detailLevel || "standard",
       ).toLowerCase();
+      const mode = String(reqBody.mode || e.parameter.mode || "analysis")
+        .toLowerCase()
+        .trim();
+      const userId = String(reqBody.userId || e.parameter.userId || "").trim();
+      const question = String(reqBody.question || e.parameter.question || "")
+        .trim()
+        .slice(0, 1200);
       const focusAreas = Array.isArray(reqBody.focusAreas)
         ? reqBody.focusAreas
             .map((v) => String(v || "").toLowerCase())
@@ -1739,33 +1746,40 @@ function handleRequest(e, isPost) {
           focusAreas.length > 0
             ? focusAreas.join(", ")
             : "pemasukan, pengeluaran, budgeting";
-        const prompt =
-          `Kamu adalah analis keuangan keluarga senior. Buat insight dalam Bahasa Indonesia yang praktis, jujur, dan to the point.\n` +
-          `Fokus analisis: ${focusLabel}.\n` +
-          `Periode: ${periodLabel}.\n\n` +
+
+        const baseDataBlock =
+          `Periode: ${periodLabel}.\n` +
           `Data utama backend:\n` +
           `- Jumlah transaksi: ${totalTransaksi}\n` +
           `- Pemasukan: Rp ${masuk}\n` +
           `- Pengeluaran: Rp ${keluar}\n` +
           `${rincian || "- (Belum ada pengeluaran per pos)"}\n\n` +
-          `${summaryBlock}\n\n` +
-          `Format keluaran WAJIB rapi dengan heading berikut:\n` +
-          `1) OVERVIEW\n` +
-          `2) ANALISIS PEMASUKAN\n` +
-          `3) ANALISIS PENGELUARAN\n` +
-          `4) ANALISIS BUDGETING\n` +
-          `5) PRIORITAS 30 HARI\n\n` +
-          `Aturan isi:\n` +
-          `- OVERVIEW: 3 poin utama kondisi finansial periode ini.\n` +
-          `- ANALISIS PEMASUKAN: stabilitas pemasukan, risiko, peluang peningkatan.\n` +
-          `- ANALISIS PENGELUARAN: pos dominan, pola boros/efisien, anomali.\n` +
-          `- ANALISIS BUDGETING: evaluasi rasio saldo, kecukupan batas anggaran, rekomendasi alokasi.\n` +
-          `- PRIORITAS 30 HARI: 3 aksi paling berdampak, tiap aksi wajib punya target angka sederhana.\n` +
-          `- Jika data minim, tulis asumsi singkat lalu tetap beri rekomendasi yang aman.\n` +
-          `- Gunakan bullet dan angka rupiah yang jelas.\n` +
-          (detailLevel === "deep"
-            ? `- Kedalaman analisis: medium-deep (6-12 bullet total lintas section).`
-            : `- Kedalaman analisis: ringkas.`);
+          `${summaryBlock}`;
+
+        const prompt =
+          mode === "chat" && question
+            ? `Kamu adalah AI agent ahli akuntansi keluarga. Jawab pertanyaan pengguna secara praktis, tepat angka, dan mudah dipahami.\n` +
+              `${baseDataBlock}\n\n` +
+              `Pertanyaan pengguna: ${question}\n\n` +
+              `Aturan jawaban:\n` +
+              `- Jawab dalam Bahasa Indonesia.\n` +
+              `- Fokus ke pertanyaan pengguna, maksimal 6 bullet atau 2 paragraf singkat.\n` +
+              `- Jika data tidak cukup, jelaskan keterbatasannya lalu beri saran aman.\n` +
+              `- Sertakan angka rupiah bila relevan.`
+            : `Kamu adalah konsultan keuangan keluarga sekaligus expert akuntansi. Buat analisis kondisi keuangan saat ini dalam Bahasa Indonesia yang to the point.\n` +
+              `Fokus analisis: ${focusLabel}.\n` +
+              `${baseDataBlock}\n\n` +
+              `Format keluaran WAJIB:\n` +
+              `1) RINGKASAN KONDISI SAAT INI\n` +
+              `2) TEMUAN RISIKO UTAMA\n` +
+              `3) REKOMENDASI PRIORITAS\n\n` +
+              `Aturan isi:\n` +
+              `- Gunakan bullet yang jelas, berbasis angka.\n` +
+              `- Rekomendasi harus realistis untuk keluarga.\n` +
+              `- Jika data minim, tulis asumsi singkat.\n` +
+              (detailLevel === "deep"
+                ? `- Kedalaman analisis: medium-deep (6-12 bullet total).`
+                : `- Kedalaman analisis: ringkas.`);
 
         let resp,
           json,
@@ -1834,7 +1848,120 @@ function handleRequest(e, isPost) {
         if (!success) {
           output.status = "error";
           output.message = "Gagal: " + (json.error?.message || "Unknown");
+        } else if (mode === "chat" || mode === "analysis") {
+          try {
+            const historyType = mode === "analysis" ? "analysis" : "chat";
+            const normalizedQuestion =
+              historyType === "analysis"
+                ? "[Analisis kondisi keuangan saat ini]"
+                : String(question || "");
+            const sheet = ensureSheetHeaders("AI_Chat_History", [
+              "ID",
+              "FamilyId",
+              "UserId",
+              "Provider",
+              "Period",
+              "Question",
+              "Answer",
+              "CreatedAt",
+              "Type",
+            ]);
+            sheet.appendRow([
+              generateId(),
+              String(familyId || ""),
+              String(userId || ""),
+              String(provider || "gemini"),
+              String(period || "bulanan"),
+              normalizedQuestion.slice(0, 4000),
+              String(output.data || "").slice(0, 20000),
+              new Date().toISOString(),
+              historyType,
+            ]);
+          } catch (saveErr) {
+            // Don't break user response if history persistence fails.
+          }
         }
+      }
+    } else if (action === "getAIChatHistory") {
+      const familyId = String(e.parameter.familyId || "").trim();
+      const userId = String(e.parameter.userId || "").trim();
+      const modeFilter = String(e.parameter.mode || "all")
+        .trim()
+        .toLowerCase();
+      const pageRaw = parseInt(String(e.parameter.page || "1"), 10) || 1;
+      const page = Math.max(1, pageRaw);
+      const pageSizeRaw =
+        parseInt(
+          String(e.parameter.pageSize || e.parameter.limit || "10"),
+          10,
+        ) || 10;
+      const pageSize = Math.max(1, Math.min(pageSizeRaw, 50));
+
+      if (!familyId) {
+        output.status = "error";
+        output.message = "familyId required";
+      } else {
+        const sheet = ensureSheetHeaders("AI_Chat_History", [
+          "ID",
+          "FamilyId",
+          "UserId",
+          "Provider",
+          "Period",
+          "Question",
+          "Answer",
+          "CreatedAt",
+          "Type",
+        ]);
+
+        const rows = sheet.getDataRange().getValues();
+        const filteredItems = rows
+          .slice(1)
+          .filter((r) => {
+            const rowFamilyId = String(r[1] || "").trim();
+            const rowUserId = String(r[2] || "").trim();
+            const rowType = String(r[8] || "chat")
+              .trim()
+              .toLowerCase();
+            if (rowFamilyId !== familyId) return false;
+            if (userId && rowUserId !== userId) return false;
+            if (modeFilter !== "all" && rowType !== modeFilter) return false;
+            return true;
+          })
+          .map((r) => ({
+            id: String(r[0] || ""),
+            familyId: String(r[1] || ""),
+            userId: String(r[2] || ""),
+            provider: String(r[3] || ""),
+            period: String(r[4] || ""),
+            question: String(r[5] || ""),
+            answer: String(r[6] || ""),
+            createdAt: String(r[7] || ""),
+            type: String(r[8] || "chat")
+              .trim()
+              .toLowerCase(),
+          }))
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          );
+
+        const total = filteredItems.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const safePage = Math.min(page, totalPages);
+        const start = (safePage - 1) * pageSize;
+        const items = filteredItems.slice(start, start + pageSize);
+
+        output.data = {
+          items,
+          pagination: {
+            total,
+            page: safePage,
+            pageSize,
+            totalPages,
+            hasNext: safePage < totalPages,
+            hasPrev: safePage > 1,
+          },
+        };
       }
     } else if (action === "getAICategoryInsight") {
       const reqBody = isPost ? parseJSONSafe(e.postData.contents, {}) : {};
