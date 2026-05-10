@@ -42,7 +42,7 @@ export default function LaporanCharts({
       },
       {
         type: "line",
-        label: filter === "semua" ? "Tren Saldo" : "Saldo Bersih",
+        label: "Tren Saldo",
         data: barData.saldo,
         hidden: filter !== "semua",
         borderColor: "#0F766E",

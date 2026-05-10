@@ -1,6 +1,5 @@
 ﻿import {
   X,
-  Wallet,
   GitBranch,
   Mail,
   Globe,
@@ -11,6 +10,7 @@
   BarChart2,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import Logo from "/Logo.png";
 
 const APP_VERSION = "1.0.0";
 const APP_NAME = "Dompet Keluarga";
@@ -89,9 +89,11 @@ export default function TentangAplikasi({ isOpen, onClose }) {
         <div className="px-4 py-6 flex flex-col gap-6">
           {/* App Identity */}
           <div className="flex flex-col items-center text-center gap-3 pt-2">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
-              <Wallet className="w-10 h-10 text-white" />
-            </div>
+            <img 
+              src={Logo} 
+              alt="Dompet Keluarga Logo"
+              className="w-20 h-20 rounded-3xl shadow-lg object-cover"
+            />
             <div>
               <h1
                 className={`text-2xl font-extrabold tracking-tight ${textPrimary}`}
