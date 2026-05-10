@@ -251,7 +251,7 @@ function App() {
         )}
 
         <main
-          className={`flex-1 overflow-y-auto no-scrollbar pb-24 relative ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
+          className={`flex-1 overflow-y-auto no-scrollbar pb-24 relative ${isDark ? "bg-gray-900" : "bg-white"}`}
         >
           <Suspense fallback={<MainViewLoadingFallback isDark={isDark} />}>
             {currentView === "beranda" && (
